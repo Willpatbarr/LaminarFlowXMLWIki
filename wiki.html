@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LaminarFlow XMLWiki</title>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#14171a; --card:#1d2126; --ink:#e8eaed; --muted:#a4acb5; --faint:#737c86;
+  --border:#2b3138; --border-strong:#3a424b; --accent:#6cc394; --accent-soft:#1c3128;
+  --warn:#e0a458; --warn-soft:#33280f;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35); --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent)}
+code,a{overflow-wrap:anywhere}
+code{
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:6px; padding:1px 5px;
+}
+pre{overflow-x:auto; max-width:100%}
+h1{font-size:clamp(24px,5vw,34px); margin:0 0 6px; letter-spacing:-.02em}
+h2{font-size:clamp(19px,3.4vw,23px); margin:30px 0 12px; letter-spacing:-.01em}
+h3{font-size:clamp(15px,2.4vw,17px); margin:0}
+
+/* ---------- layout ---------- */
+main{
+  max-width:1180px; margin-inline:auto;
+  padding:34px clamp(16px,4vw,40px) 90px;
+}
+.page{display:none} .page.active{display:block}
+.tabpanel{display:none} .tabpanel.active{display:block}
+.eyebrow{
+  color:var(--faint); font-size:11.5px; letter-spacing:.14em;
+  text-transform:uppercase; margin:0 0 10px; font-weight:600;
+}
+.lede{color:var(--muted); margin:0 0 26px; max-width:70ch}
+
+/* ---------- one-sentence version ---------- */
+.osv{
+  background:var(--accent-soft); border:1px solid #2c5a43;
+  border-radius:var(--radius); padding:15px 18px; margin:0 0 28px;
+}
+.osv .eyebrow{color:var(--accent); margin-bottom:5px}
+.osv p{margin:0; color:var(--ink)}
+
+/* ---------- floating nav ----------
+   Project override: this nav is ALWAYS the collapsed chevron dropdown, at every
+   window size — not the expanded rail HTMLer uses on wide screens. Pages here
+   are diagram folders that grow without bound, so a permanent rail would either
+   run off-screen or eat a fixed slice of width the diagrams want. */
+.skipto{
+  position:fixed; top:10px; left:10px;
+  z-index:60; display:flex; flex-direction:column; gap:5px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:5px; box-shadow:var(--shadow);
+  width:auto;
+}
+.skipto a{
+  text-decoration:none; color:var(--muted); font-size:13px;
+  padding:6px 10px; border-radius:8px; transition:.15s; cursor:pointer;
+  display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.skipto a:hover{background:var(--bg); color:var(--accent)}
+.skipto a.active{background:var(--bg); color:var(--accent); font-weight:600}
+.navlabel{
+  color:var(--faint); font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; font-weight:700; padding:6px 10px 3px;
+}
+.navlabel + .navlabel, .skipto a + .navlabel{margin-top:6px; border-top:1px solid var(--border)}
+.skipto-scroll{max-height:64vh; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin}
+.skipto-toggle{
+  display:flex; align-items:center; justify-content:center;
+  width:40px; height:40px; padding:0; background:none; border:0;
+  color:var(--muted); cursor:pointer; border-radius:9px;
+}
+.skipto-toggle:hover{color:var(--accent); background:var(--bg)}
+.skipto-toggle svg{transition:.15s}
+.skipto-menu{display:none; flex-direction:column; gap:5px; padding:4px 6px 8px; min-width:196px}
+.skipto:hover .skipto-menu, .skipto:focus-within .skipto-menu,
+.skipto.open .skipto-menu{display:flex}
+.skipto:hover .skipto-toggle svg, .skipto:focus-within .skipto-toggle svg,
+.skipto.open .skipto-toggle svg{transform:rotate(180deg)}
+.skipto.closed .skipto-menu{display:none}      /* explicit close beats hover/focus */
+.skipto.closed .skipto-toggle svg{transform:none}
+.navsearch{
+  width:100%; margin:2px 0 4px; background:var(--bg); color:var(--ink);
+  border:1px solid var(--border); border-radius:8px; padding:6px 9px; font-size:12.5px;
+}
+.navsearch::placeholder{color:var(--faint)}
+/* Clear the chevron only when the centred column would actually run under it. */
+@media (max-width:1290px){
+  main{padding-top:72px}
+}
+
+/* ---------- tabs ---------- */
+.tabs{
+  display:flex; gap:6px; flex-wrap:wrap; margin:0 0 20px;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  background:none; border:0; border-bottom:2px solid transparent; color:var(--muted);
+  font-size:13.5px; padding:9px 12px; cursor:pointer; border-radius:8px 8px 0 0;
+  transition:.15s; font-family:inherit;
+}
+.tab:hover{color:var(--ink); background:var(--card)}
+.tab.active{color:var(--accent); border-bottom-color:var(--accent)}
+.tabcount{color:var(--faint); font-size:11px; margin-left:5px}
+
+/* ---------- diagram card ---------- */
+.dgm{
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+  margin:0 0 22px; overflow:hidden;
+}
+.dgm-head{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:12px 16px; border-bottom:1px solid var(--border); background:#1a1e23;
+}
+.dgm-name{
+  font:600 15px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--ink); margin:0; overflow-wrap:anywhere;
+}
+.kind{
+  font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+  padding:3px 7px; border-radius:6px; border:1px solid var(--border-strong); color:var(--muted);
+}
+.kind.class{color:var(--accent); border-color:#2c5a43; background:var(--accent-soft)}
+.kind.method{color:#82aee0; border-color:#2f4a6b; background:#182533}
+.kind.func{color:var(--warn); border-color:#5a4520; background:var(--warn-soft)}
+/* Class prefix on a method, and parent prefix on a subclass — present but quiet. */
+.owner{color:var(--faint); font-weight:400}
+.tab-class{font-weight:700}
+.sublinks{
+  color:var(--faint); font-size:13px; margin:-14px 0 22px;
+}
+.sublinks a{color:var(--accent); cursor:pointer; text-decoration:none}
+.sublinks a:hover{text-decoration:underline}
+.skipto a.sub{font-size:12.5px}
+.skipto a.sub::before{content:'└ '; color:var(--faint)}
+.dgm-where{
+  font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--faint); overflow-wrap:anywhere; max-width:100%;
+}
+.dgm-actions{margin-left:auto; display:flex; gap:6px}
+.btn{
+  background:var(--bg); border:1px solid var(--border); color:var(--muted);
+  font:12px/1 inherit; font-family:inherit; padding:6px 10px; border-radius:8px;
+  cursor:pointer; transition:.15s;
+}
+.btn:hover{color:var(--accent); border-color:var(--border-strong)}
+.btn.ok{color:var(--accent); border-color:#2c5a43}
+/* A light "sheet" under each diagram. draw.io's static viewer bakes fills and
+   strokes straight into the SVG, so it cannot invert a light-themed diagram —
+   giving it a white page instead means whatever you paste renders exactly as
+   it does in the editor, and draw.io's own light toolbar looks native on it. */
+.dgm-body{
+  padding:10px 12px 12px; overflow-x:auto;
+  background:#ffffff; color-scheme:light;
+}
+.dgm-body .mxgraph{max-width:100%}
+.dgm.zoomed{
+  position:fixed; inset:0; z-index:200; margin:0; border-radius:0;
+  display:flex; flex-direction:column;
+}
+.dgm.zoomed .dgm-body{flex:1; overflow:auto}
+.raw{
+  white-space:pre-wrap; font:11.5px/1.5 ui-monospace,Menlo,monospace;
+  color:var(--muted); background:var(--bg); border-top:1px solid var(--border);
+  max-height:260px; overflow:auto; margin:0; padding:12px 14px;
+}
+
+/* ---------- index / lists ---------- */
+.grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
+.tile{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; text-decoration:none; color:var(--ink); display:block; transition:.15s;
+}
+.tile:hover{border-color:var(--border-strong); background:#20252b}
+.tile .t{font-weight:600; margin:0 0 3px}
+.tile .s{color:var(--faint); font-size:12.5px; margin:0}
+.reflist{list-style:none; padding:0; margin:0}
+.reflist li{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:9px 2px; border-bottom:1px solid var(--border);
+}
+.reflist li:last-child{border-bottom:0}
+.reflist .nm{
+  font:13px/1.3 ui-monospace,Menlo,monospace; color:var(--accent);
+  text-decoration:none; cursor:pointer;
+}
+.reflist .nm:hover{text-decoration:underline}
+.reflist .where{color:var(--faint); font-size:12px; margin-left:auto}
+.note{
+  border:1px solid var(--border); border-left:3px solid var(--warn);
+  background:var(--warn-soft); border-radius:10px; padding:12px 15px; margin:0 0 18px;
+}
+.note.good{border-left-color:var(--accent); background:var(--accent-soft)}
+.note p{margin:0}
+.empty{color:var(--faint); padding:18px 0}
+table{border-collapse:collapse; width:100%; font-size:13px}
+.tablewrap{overflow-x:auto; margin:0 0 18px}
+th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--border)}
+th{color:var(--faint); font-size:11px; letter-spacing:.1em; text-transform:uppercase}
+td code{font-size:11.5px}
+
+/* ---------- search overlay ---------- */
+.ovl{
+  position:fixed; inset:0; z-index:300; background:rgba(10,12,14,.72);
+  display:none; align-items:flex-start; justify-content:center; padding:12vh 16px 16px;
+}
+.ovl.open{display:flex}
+.ovl-box{
+  width:100%; max-width:560px; background:var(--card);
+  border:1px solid var(--border-strong); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.ovl-box input{
+  width:100%; border:0; border-bottom:1px solid var(--border); background:none;
+  color:var(--ink); font-size:16px; padding:15px 18px; outline:none; font-family:inherit;
+}
+.ovl-results{max-height:46vh; overflow-y:auto; padding:6px}
+.ovl-results div{
+  padding:9px 12px; border-radius:9px; cursor:pointer; display:flex; gap:10px; align-items:baseline;
+}
+.ovl-results div.sel{background:var(--bg)}
+.ovl-results .n{font:13px ui-monospace,Menlo,monospace; color:var(--ink)}
+.ovl-results .w{color:var(--faint); font-size:11.5px; margin-left:auto}
+.ovl-hint{color:var(--faint); font-size:11.5px; padding:9px 18px; border-top:1px solid var(--border)}
+.kbd{
+  border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px;
+  padding:1px 5px; font-size:11px; color:var(--muted);
+}
+
+/* ---------- refs rendered inside diagram labels ---------- */
+a.wikiref{color:var(--accent) !important; cursor:pointer; text-decoration:underline}
+text.wikiref{fill:var(--accent) !important; cursor:pointer; text-decoration:underline}
+
+@media (max-width:720px){
+  main{max-width:100%}
+  .dgm-head{padding:11px 14px}
+  .dgm-body{padding:8px 10px 12px}
+}
+</style>
+</head>
+<body>
+
+<nav class="skipto" aria-label="Pages">
+  <button class="skipto-toggle" aria-label="Page menu"><svg width="18" height="18"
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+    stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+  <div class="skipto-menu">
+    <input class="navsearch" type="search" placeholder="Filter pages…" aria-label="Filter pages">
+    <div class="skipto-scroll" id="navlinks"></div>
+  </div>
+</nav>
+
+<main id="main"></main>
+
+<div class="ovl" id="ovl">
+  <div class="ovl-box">
+    <input id="ovl-input" type="text" placeholder="Search every diagram…" autocomplete="off" spellcheck="false">
+    <div class="ovl-results" id="ovl-results"></div>
+    <div class="ovl-hint"><span class="kbd">↑↓</span> move · <span class="kbd">⏎</span> open · <span class="kbd">esc</span> close</div>
+  </div>
+</div>
+
+<script src="vendor/viewer-static.min.js"></script>
+<script src="wiki-files.js"></script>
+<script>
+/* =========================================================================
+   LaminarFlow XMLWiki — renders every diagram under classes/ and standaloneFunctions/
+   as an HTMLer-style pages+tabs document. Nothing here needs editing to add
+   a diagram; see README.md.
+
+   Structure this expects:
+
+     classes/<Class>/<anything>.js     first diagram = the class,
+                                       the rest = that class's methods
+     classes/<Class>/<SubClass>/…      a subclass, nested to any depth
+     standaloneFunctions/<file>.js     every diagram = a standalone function,
+                                       one page per file
+   ========================================================================= */
+(function(){
+'use strict';
+
+/* ---------------------------------------------------------------- config */
+var CLASSES_DIR = 'classes';
+var FUNCS_DIR   = 'standaloneFunctions';
+
+/* The three things a diagram can be. A diagram's kind comes from where it
+   sits, not from anything you write in it. */
+var KIND = {
+  class:  {key:'class',  label:'class',    one:'class',              many:'classes'},
+  method: {key:'method', label:'method',   one:'method',             many:'methods'},
+  func:   {key:'func',   label:'function', one:'standalone function', many:'standalone functions'}
+};
+
+var CLASS_ALIASES  = ['class','classes','c','cls'];
+var FUNC_ALIASES   = ['func','function','functions','fn','f'];
+var METHOD_ALIASES = ['method','methods','m'];
+
+var REF_TYPES = []
+  .concat(CLASS_ALIASES, FUNC_ALIASES, METHOD_ALIASES,
+          ['page','p','file','tab','diagram','d','any']).join('|');
+var REF_RE   = new RegExp('^#{1,2}(' + REF_TYPES + ')#(.+)$', 'i');
+var REF_SCAN = new RegExp('#{1,2}(' + REF_TYPES + ')#([A-Za-z0-9_.\\-\\/]+)', 'gi');
+
+function aliasKind(a){
+  a = String(a).toLowerCase();
+  if (CLASS_ALIASES.indexOf(a)  !== -1) return 'class';
+  if (FUNC_ALIASES.indexOf(a)   !== -1) return 'func';
+  if (METHOD_ALIASES.indexOf(a) !== -1) return 'method';
+  return null;
+}
+
+/* ------------------------------------------------------------- utilities */
+function slug(s){
+  return String(s).trim().replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'x';
+}
+function prettify(s){
+  if (/[-_]/.test(s)) {
+    return s.split(/[-_]+/).map(function(w){
+      return w ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+    }).join(' ');
+  }
+  return s;
+}
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function decodeXmlEntities(s){
+  return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+    .replace(/&#39;/g,"'").replace(/&apos;/g,"'").replace(/&#10;/g,'\n').replace(/&amp;/g,'&');
+}
+function el(tag, cls, html){
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+}
+
+/* ==========================================================================
+   1. LOADING
+   Each diagram file is a plain script whose whole content is
+   `SomeName = ` + a template literal of draw.io XML. We snapshot which
+   globals hold draw.io XML before and after each file, and the difference
+   is that file's diagram list — so the files need zero boilerplate.
+   ========================================================================== */
+var XML_SIGNATURE = /<\s*(mxfile|mxGraphModel)\b/i;
+
+/* Chrome caches file:// subresources, so a plain refresh can quietly serve you
+   yesterday's diagrams — which breaks the one promise this thing makes ("add a
+   diagram, refresh, it's there") and looks exactly like a bug in the wiki.
+   A query string is ignored when resolving a file:// path but still defeats the
+   cache, so every load gets one. */
+var CACHE_BUST = '?v=' + Date.now();
+
+function xmlGlobals(){
+  var out = {};
+  var names = Object.getOwnPropertyNames(window);
+  for (var i = 0; i < names.length; i++) {
+    var k = names[i], v;
+    try { v = window[k]; } catch(e){ continue; }
+    if (typeof v === 'string' && XML_SIGNATURE.test(v)) out[k] = v;
+  }
+  return out;
+}
+
+function loadFile(path, cb){
+  var before = xmlGlobals();
+  window.D = {};                                  // optional explicit form
+  var s = document.createElement('script');
+  var settled = false;
+
+  function finish(err){
+    if (settled) return;
+    settled = true;
+    var after = xmlGlobals(), found = [], seen = {};
+    Object.keys(after).forEach(function(k){
+      if (!(k in before) || before[k] !== after[k]) { found.push({name:k, xml:after[k]}); seen[k] = 1; }
+    });
+    var d = window.D || {};
+    Object.keys(d).forEach(function(k){
+      if (typeof d[k] === 'string' && XML_SIGNATURE.test(d[k]) && !seen[k]) {
+        found.push({name:k, xml:d[k]});
+      }
+    });
+    // Clean up so one file's names can never bleed into the next.
+    found.forEach(function(f){ try { delete window[f.name]; } catch(e){} });
+    try { delete window.D; } catch(e){ window.D = undefined; }
+    cb({path:path, diagrams:found, error:err});
+  }
+
+  // Standalone build (node build.js --inline): the file's source is already
+  // here, so run it as an inline script instead of fetching it. Identical
+  // mechanism to the file:// path, so the snapshot logic is unchanged.
+  var inlined = (typeof WIKI_INLINE_SRC !== 'undefined') && WIKI_INLINE_SRC[path];
+  if (typeof inlined === 'string') {
+    s.textContent = inlined;
+    document.head.appendChild(s);
+    if (s.parentNode) s.parentNode.removeChild(s);
+    finish(null);
+    return;
+  }
+
+  s.src = path + CACHE_BUST;
+  s.onload  = function(){ finish(null); };
+  s.onerror = function(){ finish('File not found (check the path in wiki-files.js).'); };
+  document.head.appendChild(s);
+}
+
+function loadAll(paths, done){
+  var recs = [], i = 0;
+  (function next(){
+    if (i >= paths.length) return done(recs);
+    loadFile(paths[i++], function(rec){ recs.push(rec); next(); });
+  })();
+}
+
+/* ==========================================================================
+   2. MODEL
+   A class folder becomes a page: the class diagram is the first tab, its
+   methods follow in file order. A subfolder of a class folder is a subclass
+   and gets its own page, nested under it. Each file in standaloneFunctions/
+   becomes a page whose tabs are the functions in it.
+   ========================================================================== */
+var MODEL = {
+  pages:[],        // every page, ordered: classes (hierarchy) then function files
+  byId:{},
+  classes:{},      // "httpclient" and "parent.child" -> class entry
+  methods:{},      // "httpclient.send"                -> method entry
+  funcs:{},        // "retrywithbackoff"               -> standalone func entry
+  methodsByName:{},// "send" -> [entries]  (for diagnostics only, never resolution)
+  problems:[], files:[], all:[]
+};
+
+function addProblem(where, msg){ MODEL.problems.push({where:where, msg:msg}); }
+
+function buildModel(recs){
+  /* ---- 1. bucket the loaded files by the folder that owns them ---- */
+  var owners = {};   // folder path -> {path, isClass, files:[rec], depth, name}
+
+  recs.forEach(function(rec){
+    MODEL.files.push({path:rec.path, error:rec.error, count:rec.diagrams.length});
+
+    var parts = rec.path.replace(/^\.?\//,'').split('/').filter(Boolean);
+    var root = parts[0];
+    if (root !== CLASSES_DIR && root !== FUNCS_DIR) {
+      addProblem(rec.path, 'Top folder must be "' + CLASSES_DIR + '" or "' + FUNCS_DIR +
+        '" — this file was skipped.');
+      return;
+    }
+    if (rec.error) { addProblem(rec.path, rec.error); return; }
+    if (!rec.diagrams.length) {
+      addProblem(rec.path, 'Loaded, but no diagram was found. Check the browser console for a ' +
+        'syntax error, and make sure each entry looks like  Name = `<mxfile…>` .');
+    }
+
+    var isClass = root === CLASSES_DIR;
+    // A class is owned by its folder; a standalone-function page is the file itself.
+    var ownerPath = isClass ? parts.slice(0, -1).join('/') : parts.join('/');
+
+    if (isClass && parts.length < 3) {
+      addProblem(rec.path, 'Files directly in ' + CLASSES_DIR +
+        '/ are skipped — a class needs its own folder, e.g. ' + CLASSES_DIR + '/MyClass/MyClass.js');
+      return;
+    }
+
+    if (!owners[ownerPath]) {
+      owners[ownerPath] = {
+        path: ownerPath, isClass: isClass, files: [],
+        // For a class: the folder name is the class name. For functions: the file name.
+        name: isClass ? parts[parts.length - 2] : parts[parts.length - 1].replace(/\.js$/i,''),
+        trail: isClass ? parts.slice(1, -1) : parts.slice(1, -1).concat(
+                 parts[parts.length - 1].replace(/\.js$/i,''))
+      };
+    }
+    owners[ownerPath].files.push(rec);
+  });
+
+  /* ---- 2. turn each owner into a page ---- */
+  var classPages = [], funcPages = [];
+
+  Object.keys(owners).forEach(function(ownerPath){
+    var o = owners[ownerPath];
+    var page = {
+      id: slug(ownerPath),
+      isClass: o.isClass,
+      name: o.name,
+      label: o.isClass ? o.name : prettify(o.trail.join(' / ')),
+      folder: ownerPath,
+      trail: o.trail,                  // ['Outer','Inner'] — the class nesting
+      depth: o.trail.length - 1,
+      diagrams: [], usedIds: {}, files: [], byFile: {},
+      classEntry: null, subclasses: []
+    };
+    MODEL.byId[page.id] = page;
+    (o.isClass ? classPages : funcPages).push(page);
+
+    /* Which file holds the class diagram? Normally there's one file. If there
+       are several, prefer the one named after the class, else the first. */
+    var ordered = o.files.slice();
+    if (o.isClass && ordered.length > 1) {
+      ordered.sort(function(a, b){
+        var an = a.path.split('/').pop().replace(/\.js$/i,'');
+        var bn = b.path.split('/').pop().replace(/\.js$/i,'');
+        return (bn === o.name) - (an === o.name);
+      });
+      addProblem(o.path + '/', o.files.length + ' files in this class folder. Taking the class ' +
+        'diagram from ' + ordered[0].path.split('/').pop() +
+        ' and treating every other diagram as a method.');
+    }
+
+    ordered.forEach(function(rec){
+      var fileName = rec.path.split('/').pop().replace(/\.js$/i,'');
+      var f = {id:slug(fileName), name:fileName, label:prettify(fileName),
+               path:rec.path, diagrams:[]};
+      page.byFile[f.id] = f;
+      page.files.push(f);
+
+      rec.diagrams.forEach(function(d){
+        var isClassDiagram = page.isClass && !page.classEntry;
+        var kind = page.isClass ? (isClassDiagram ? KIND.class : KIND.method) : KIND.func;
+
+        var base = slug(d.name), id = base, n = 2;
+        while (page.usedIds[id]) id = base + '-' + (n++);
+        page.usedIds[id] = true;
+
+        var entry = {
+          name:d.name, xml:d.xml, id:id, kind:kind,
+          page:page, file:f,
+          owner: kind === KIND.method ? page.name : null,
+          // What you type to link here.
+          ref: kind === KIND.class  ? '#class#' + page.name
+             : kind === KIND.method ? '#func#' + page.name + '.' + d.name
+             :                        '#func#' + d.name
+        };
+
+        if (isClassDiagram) page.classEntry = entry;
+        indexEntry(entry, rec.path);
+
+        f.diagrams.push(entry);
+        page.diagrams.push(entry);
+        MODEL.all.push(entry);
+      });
+    });
+
+    if (page.isClass && !page.classEntry) {
+      addProblem(o.path + '/', 'No class diagram here. The first diagram in the file is taken ' +
+        'as the class, so this folder has no class to link to with #class#' + page.name + '.');
+    } else if (page.isClass && page.classEntry.name !== page.name) {
+      // The FOLDER names the class, so #class# uses that. A mismatch is usually a typo.
+      addProblem(page.classEntry.file.path,
+        'Folder is "' + page.name + '" but its first diagram is named "' + page.classEntry.name +
+        '". The folder wins, so link it as #class#' + page.name +
+        '. Rename one of them to match if that was not deliberate.');
+    }
+  });
+
+  /* ---- 3. link subclasses to their parent, order the nav ---- */
+  classPages.forEach(function(p){
+    if (p.trail.length < 2) return;
+    var parentTrail = p.trail.slice(0, -1);
+    var parent = classPages.filter(function(q){
+      return q.trail.join('/') === parentTrail.join('/');
+    })[0];
+    if (parent) { p.parent = parent; parent.subclasses.push(p); }
+    else addProblem(CLASSES_DIR + '/' + p.trail.join('/') + '/',
+      'Nested under "' + parentTrail.join('/') + '", which has no class file of its own, ' +
+      'so this is not shown as a subclass of anything.');
+  });
+
+  // Depth-first so a subclass sits directly under its parent in the nav.
+  var ordered = [];
+  function walk(list){
+    list.slice().sort(function(a,b){ return a.name.localeCompare(b.name); })
+      .forEach(function(p){ ordered.push(p); walk(p.subclasses); });
+  }
+  walk(classPages.filter(function(p){ return !p.parent; }));
+  classPages.forEach(function(p){ if (ordered.indexOf(p) === -1) ordered.push(p); });
+
+  funcPages.sort(function(a,b){ return a.label.localeCompare(b.label); });
+  MODEL.pages = ordered.concat(funcPages);
+  MODEL.classPages = ordered;
+  MODEL.funcPages = funcPages;
+}
+
+/* Register an entry under every key that may legitimately address it. */
+function indexEntry(entry, path){
+  function put(bucket, key, label){
+    var k = key.toLowerCase();
+    if (bucket[k]) {
+      addProblem(path, 'Two ' + label + 's answer to "' + key + '" (also in ' +
+        bucket[k].file.path + '). Links resolve to the first; rename one.');
+    } else bucket[k] = entry;
+  }
+
+  if (entry.kind === KIND.class) {
+    put(MODEL.classes, entry.page.name, 'class');
+    // Also addressable by its full nesting path, for same-named nested classes.
+    if (entry.page.trail.length > 1) MODEL.classes[entry.page.trail.join('.').toLowerCase()] = entry;
+  } else if (entry.kind === KIND.method) {
+    put(MODEL.methods, entry.page.name + '.' + entry.name, 'method');
+    var bare = entry.name.toLowerCase();
+    (MODEL.methodsByName[bare] = MODEL.methodsByName[bare] || []).push(entry);
+  } else {
+    put(MODEL.funcs, entry.name, 'standalone function');
+  }
+}
+
+/* ==========================================================================
+   3. REFERENCES
+
+     #class#HttpClient          a class
+     #func#HttpClient.send      a method — ALWAYS qualified by its class
+     #func#retryWithBackoff     a standalone function
+     #page#HttpClient           the class's page
+     #d#Whatever                class or standalone function, whichever matches
+
+   Methods must be qualified because method names collide constantly across
+   classes; a bare #func#send only ever finds a standalone function. Refs still
+   carry no folder or file path, so moving files around never breaks them.
+   ========================================================================== */
+/* Returns the bare ref ("#class#Foo") or null. Accepts a ref sitting in the
+   fragment of a URL too, because draw.io's addClickHandler rewrites every
+   anchor href in the container to an absolute URL before we see it. */
+function refFragment(href){
+  if (typeof href !== 'string') return null;
+  var s = href.trim();
+  if (REF_RE.test(s)) return s;
+  var i = s.indexOf('#');
+  if (i > 0 && REF_RE.test(s.slice(i))) return s.slice(i);
+  return null;
+}
+
+function isRef(href){
+  return refFragment(href) !== null;
+}
+
+function resolveRef(href){
+  var m = REF_RE.exec(refFragment(href) || '');
+  if (!m) return null;
+  var alias = m[1].toLowerCase();
+  var target = m[2].trim().replace(/^\/+|\/+$/g,'');
+  var lower = target.toLowerCase();
+  var kind = aliasKind(alias);
+
+  if (kind === 'class')  return wrap(MODEL.classes[lower]);
+  if (kind === 'method') return wrap(MODEL.methods[lower]);
+
+  if (kind === 'func') {
+    // A dot means it can only be a method; without one, only a standalone.
+    return wrap(lower.indexOf('.') !== -1 ? MODEL.methods[lower] : MODEL.funcs[lower]);
+  }
+
+  if (alias === 'diagram' || alias === 'd' || alias === 'any') {
+    return wrap(MODEL.classes[lower] || MODEL.funcs[lower] || MODEL.methods[lower]);
+  }
+
+  if (alias === 'page' || alias === 'p') {
+    var want = lower.replace(/\s+/g,'');
+    for (var j = 0; j < MODEL.pages.length; j++) {
+      var pg = MODEL.pages[j];
+      if (pg.name.toLowerCase() === want ||
+          pg.id === slug(want).toLowerCase() ||
+          pg.folder.toLowerCase() === want ||
+          pg.trail.join('.').toLowerCase() === want) {
+        return {kind:'page', page:pg};
+      }
+    }
+    return null;
+  }
+
+  // file / tab — accept "MyClass" or "sub/parsing"
+  var fileWant = lower.split('/').pop();
+  for (var k = 0; k < MODEL.pages.length; k++) {
+    var p = MODEL.pages[k];
+    for (var n = 0; n < p.files.length; n++) {
+      if (p.files[n].name.toLowerCase() === fileWant) {
+        return {kind:'file', page:p, file:p.files[n]};
+      }
+    }
+  }
+  return null;
+
+  function wrap(e){ return e ? {kind:'diagram', entry:e} : null; }
+}
+
+function followRef(href){
+  var r = resolveRef(href);
+  if (!r) { explainBadRef(refFragment(href) || String(href).trim()); return false; }
+  goToRef(r);
+  return true;
+}
+
+/* Say what is actually wrong. The two mistakes this structure invites are an
+   unqualified method ref and the right name under the wrong type, so name
+   those explicitly rather than reporting a bare "no target". */
+function explainBadRef(ref, quiet){
+  var msg = diagnoseRef(ref);
+  if (!quiet) toast(msg.text, msg.ms);
+  return msg.text;
+}
+
+function diagnoseRef(ref){
+  var m = REF_RE.exec(ref || '');
+  if (!m) return {text:'Not a valid ref: ' + ref, ms:5000};
+
+  var alias = m[1].toLowerCase();
+  var want = aliasKind(alias);
+  var target = m[2].trim().replace(/^\/+|\/+$/g,'');
+  var lower = target.toLowerCase();
+
+  // Unqualified method: the most likely mistake, since methods need the class.
+  var byName = MODEL.methodsByName[lower];
+  if (byName && byName.length && lower.indexOf('.') === -1) {
+    var opts = byName.slice(0, 4).map(function(e){ return '#func#' + e.owner + '.' + e.name; });
+    return {text: '"' + target + '" is a method, so it needs its class: ' +
+      opts.join('  or  ') + (byName.length > 4 ? '  (…)' : ''), ms:9000};
+  }
+
+  // Right name, wrong type.
+  var found = MODEL.classes[lower] || MODEL.funcs[lower] || MODEL.methods[lower];
+  if (found && found.kind.key !== want) {
+    return {text: '"' + target + '" is a ' + found.kind.one + ', not a ' +
+      (want ? KIND[want].one : 'match') + '. Use  ' + found.ref +
+      '  — it lives in ' + found.file.path, ms:9000};
+  }
+
+  var where = want === 'class' ? CLASSES_DIR + '/'
+            : want === 'func'  ? FUNCS_DIR + '/ (or qualify a method as Class.method)'
+            : 'this wiki';
+  return {text:'Nothing named "' + target + '" in ' + where + '. Check the Doctor tab.', ms:7000};
+}
+
+/* Pull every ref out of a diagram's XML so broken ones can be reported. */
+function refsIn(xml){
+  var out = [], seen = {}, m;
+  var linkRe = /link\s*=\s*"([^"]*)"/gi;
+  while ((m = linkRe.exec(xml))) {
+    var v = decodeXmlEntities(m[1]).trim();
+    if (isRef(v) && !seen[v]) { seen[v] = 1; out.push(v); }
+  }
+  REF_SCAN.lastIndex = 0;
+  while ((m = REF_SCAN.exec(xml))) {
+    var raw = decodeXmlEntities(m[0]).trim();
+    if (isRef(raw) && !seen[raw]) { seen[raw] = 1; out.push(raw); }
+  }
+  return out;
+}
+
+function auditRefs(){
+  MODEL.all.forEach(function(entry){
+    refsIn(entry.xml).forEach(function(ref){
+      if (!resolveRef(ref)) {
+        addProblem(entry.file.path + ' → ' + entry.name,
+          '"' + ref + '" points at nothing. ' +
+          diagnoseRef(ref).text.replace(/\s*Check the Doctor tab\.$/, ''));
+      }
+    });
+  });
+}
+
+/* ==========================================================================
+   4. RENDERING THE DOCUMENT
+   ========================================================================== */
+var main = document.getElementById('main');
+var navlinks = document.getElementById('navlinks');
+
+function diagramCard(entry){
+  var card = el('div','dgm');
+  card.id = 'd-' + entry.page.id + '-' + entry.id;
+
+  var head = el('div','dgm-head');
+  head.appendChild(el('span','kind ' + entry.kind.key, entry.kind.label));
+  head.appendChild(el('h3','dgm-name',
+    (entry.kind === KIND.method ? '<span class="owner">' + esc(entry.owner) + '.</span>' : '') +
+    esc(entry.name)));
+  // Files are no longer a place you navigate to, so show where to edit this.
+  var where = el('span','dgm-where', esc(entry.file.path));
+  where.title = 'Defined in ' + entry.file.path;
+  head.appendChild(where);
+
+  var actions = el('div','dgm-actions');
+  var ref = entry.ref;
+
+  var copy = el('button','btn','Copy ref');
+  copy.title = 'Copy ' + ref + ' — paste into a shape’s Link field in draw.io';
+  copy.onclick = function(){
+    copyText(ref, function(ok){
+      copy.textContent = ok ? 'Copied ' + ref : ref;
+      copy.className = 'btn ok';
+      setTimeout(function(){ copy.textContent = 'Copy ref'; copy.className = 'btn'; }, 1600);
+    });
+  };
+  actions.appendChild(copy);
+
+  var zoom = el('button','btn','Expand');
+  zoom.onclick = function(){
+    var on = card.classList.toggle('zoomed');
+    zoom.textContent = on ? 'Close' : 'Expand';
+    document.body.style.overflow = on ? 'hidden' : '';
+    window.dispatchEvent(new Event('resize'));
+  };
+  actions.appendChild(zoom);
+
+  var src = el('button','btn','XML');
+  var body = el('div','dgm-body');
+  var holder = el('div','dgm-holder');
+  var rawBox = el('pre','raw', esc(entry.xml));
+  rawBox.style.display = 'none';
+  src.onclick = function(){
+    var on = rawBox.style.display === 'none';
+    rawBox.style.display = on ? 'block' : 'none';
+    src.className = on ? 'btn ok' : 'btn';
+  };
+  actions.appendChild(src);
+
+  head.appendChild(actions);
+  holder.dataset.xml = entry.xml;
+  body.appendChild(holder);
+  card.appendChild(head);
+  card.appendChild(body);
+  card.appendChild(rawBox);   // outside the light sheet — stays dark
+  return card;
+}
+
+function buildPages(){
+  /* ---- home page ---- */
+  var home = el('section','page active');
+  home.id = 'p-home';
+  home.innerHTML =
+    '<p class="eyebrow">LaminarFlow XMLWiki</p>' +
+    '<h1>Diagram index</h1>' +
+    '<div class="osv"><p class="eyebrow">One-sentence version</p><p>Every class folder under ' +
+    '<code>classes/</code> becomes a page — the class diagram first, then its methods — every ' +
+    'file under <code>standaloneFunctions/</code> becomes a page of functions, and a shape whose ' +
+    'Link field says <code>#class#Thing</code> or <code>#func#Thing.method</code> jumps straight ' +
+    'there.</p></div>';
+
+  var tabs = el('div','tabs'); tabs.setAttribute('role','tablist');
+  home.appendChild(tabs);
+
+  function homeTab(id, label, node, active){
+    var b = el('button','tab' + (active ? ' active' : ''), label);
+    b.dataset.tab = id;
+    tabs.appendChild(b);
+    var panel = el('div','tabpanel' + (active ? ' active' : ''));
+    panel.id = id;
+    panel.appendChild(node);
+    home.appendChild(panel);
+  }
+
+  /* everything, grouped by kind */
+  var allWrap = el('div');
+  [KIND.class, KIND.method, KIND.func].forEach(function(k){
+    var entries = MODEL.all.filter(function(e){ return e.kind === k; })
+      .sort(function(a,b){
+        return (a.owner || '').localeCompare(b.owner || '') || a.name.localeCompare(b.name);
+      });
+    var heading = k.many.charAt(0).toUpperCase() + k.many.slice(1);
+    allWrap.appendChild(el('h2', null,
+      heading + ' <span class="tabcount">' + entries.length + '</span>'));
+    if (!entries.length) {
+      allWrap.appendChild(el('p','empty','No ' + k.many + ' yet.'));
+      return;
+    }
+    var ul = el('ul','reflist');
+    entries.forEach(function(e){
+      var li = el('li');
+      var a = el('a','nm',
+        (e.kind === KIND.method ? '<span class="owner">' + esc(e.owner) + '.</span>' : '') +
+        esc(e.name));
+      a.onclick = function(){ go(e.page.id, e.id); };
+      li.appendChild(a);
+      li.appendChild(el('code', null, esc(e.ref)));
+      li.appendChild(el('span','where', esc(e.file.path)));
+      ul.appendChild(li);
+    });
+    allWrap.appendChild(ul);
+  });
+  homeTab('t-all','All diagrams', allWrap, true);
+
+  /* pages tile grid */
+  var pagesWrap = el('div');
+  [{label:'Classes', pages:MODEL.classPages, empty:CLASSES_DIR + '/'},
+   {label:'Standalone functions', pages:MODEL.funcPages, empty:FUNCS_DIR + '/'}].forEach(function(sec){
+    pagesWrap.appendChild(el('h2', null, sec.label));
+    if (!sec.pages.length) {
+      pagesWrap.appendChild(el('p','empty','Nothing in ' + sec.empty + ' yet.'));
+      return;
+    }
+    var g = el('div','grid');
+    sec.pages.forEach(function(p){
+      var bits = [];
+      if (p.isClass) {
+        var methods = p.diagrams.length - (p.classEntry ? 1 : 0);
+        bits.push(methods + ' method' + (methods === 1 ? '' : 's'));
+        if (p.subclasses.length) bits.push(p.subclasses.length + ' subclass' +
+          (p.subclasses.length === 1 ? '' : 'es'));
+        if (!p.classEntry) bits.push('no class diagram');
+      } else {
+        bits.push(p.diagrams.length + ' function' + (p.diagrams.length === 1 ? '' : 's'));
+      }
+      var tile = el('a','tile',
+        '<p class="t">' + (p.parent ? '<span class="owner">' + esc(p.parent.name) + ' › </span>' : '') +
+        esc(p.label) + '</p><p class="s">' + bits.join(' · ') + '</p>');
+      tile.onclick = function(){ go(p.id, null); };
+      g.appendChild(tile);
+    });
+    pagesWrap.appendChild(g);
+  });
+  homeTab('t-pages','Pages', pagesWrap, false);
+
+  /* how-to */
+  var howto = el('div');
+  howto.innerHTML =
+    '<h2>Where things go</h2>' +
+    '<div class="tablewrap"><table><tbody>' +
+    '<tr><td><code>' + CLASSES_DIR + '/MyClass/MyClass.js</code></td>' +
+    '<td>The class diagram <strong>first</strong>, then one diagram per method.</td></tr>' +
+    '<tr><td><code>' + CLASSES_DIR + '/MyClass/SubClass/SubClass.js</code></td>' +
+    '<td>A subclass. Nests as deep as you like.</td></tr>' +
+    '<tr><td><code>' + FUNCS_DIR + '/anything.js</code></td>' +
+    '<td>Standalone functions. Each file becomes its own page.</td></tr>' +
+    '</tbody></table></div>' +
+    '<h2>Add a diagram</h2>' +
+    '<p>Add a line to any of those files, save, refresh. That is the whole workflow. ' +
+    'Inside a class file the first diagram is the class and everything after it is a method, ' +
+    'so order matters there.</p>' +
+    '<div class="tablewrap"><table><tbody>' +
+    '<tr><td><code>send = `&lt;mxfile&gt;…&lt;/mxfile&gt;`</code></td>' +
+    '<td>Paste from draw.io: <em>Extras → Edit Diagram</em>, or <em>Ctrl+C</em> on a selection.</td></tr>' +
+    '</tbody></table></div>' +
+    '<h2>Link between diagrams</h2>' +
+    '<p>In draw.io, right-click a shape → <em>Edit Link</em> → type a ref. No URL, no path.</p>' +
+    '<div class="tablewrap"><table><thead><tr><th>Ref</th><th>Goes to</th></tr></thead><tbody>' +
+    '<tr><td><code>#class#HttpClient</code></td><td>that class’s diagram</td></tr>' +
+    '<tr><td><code>#func#HttpClient.send</code></td>' +
+    '<td>a method — <strong>always</strong> qualified by its class</td></tr>' +
+    '<tr><td><code>#func#retryWithBackoff</code></td><td>a standalone function</td></tr>' +
+    '<tr><td><code>#page#HttpClient</code></td><td>that class’s page</td></tr>' +
+    '<tr><td><code>#d#Anything</code></td><td>a class or standalone function, whichever matches</td></tr>' +
+    '</tbody></table></div>' +
+    '<p>A bare <code>#func#send</code> only ever finds a <em>standalone</em> function, because ' +
+    'method names repeat across classes. If you write one for a method the wiki tells you the ' +
+    'qualified form to use instead.</p>' +
+    '<p>The same refs work typed into a shape’s visible label as ' +
+    '<code>##class#HttpClient</code>, as a real <code>&lt;a href&gt;</code> in a label, and ' +
+    'pasted into this page’s address bar. Every <strong>Copy ref</strong> button gives you the ' +
+    'exact string.</p>' +
+    '<h2>Add a file or folder</h2>' +
+    '<p>A browser cannot list a folder from <code>file://</code>, so new <em>files</em> need one ' +
+    'line in <code>wiki-files.js</code> — or run <code>node build.js</code> to regenerate it by ' +
+    'scanning the folders. Adding a diagram to a file that is already listed needs neither.</p>';
+  homeTab('t-howto','How to add', howto, false);
+
+  /* doctor */
+  var doc = el('div');
+  var bad = MODEL.problems.length;
+  doc.appendChild(el('div','note' + (bad ? '' : ' good'),
+    '<p>' + (bad ? bad + ' thing' + (bad === 1 ? '' : 's') + ' to look at.'
+                 : 'No problems found. ' + MODEL.files.length + ' file' +
+                   (MODEL.files.length === 1 ? '' : 's') + ', ' + MODEL.all.length +
+                   ' diagram' + (MODEL.all.length === 1 ? '' : 's') + ' loaded.') + '</p>'));
+  if (bad) {
+    var pw = el('div','tablewrap');
+    var rows = MODEL.problems.map(function(p){
+      return '<tr><td><code>' + esc(p.where) + '</code></td><td>' + esc(p.msg) + '</td></tr>';
+    }).join('');
+    pw.innerHTML = '<table><thead><tr><th>Where</th><th>What</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    doc.appendChild(pw);
+  }
+  doc.appendChild(el('h2',null,'Files loaded'));
+  var fw = el('div','tablewrap');
+  fw.innerHTML = '<table><thead><tr><th>File</th><th>Diagrams</th></tr></thead><tbody>' +
+    (MODEL.files.length
+      ? MODEL.files.map(function(f){
+          return '<tr><td><code>' + esc(f.path) + '</code></td><td>' +
+            (f.error ? '<span style="color:var(--warn)">failed</span>' : f.count) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="2">wiki-files.js lists no files.</td></tr>') + '</tbody></table>';
+  doc.appendChild(fw);
+  homeTab('t-doctor','Doctor' + (bad ? ' (' + bad + ')' : ''), doc, false);
+
+  main.appendChild(home);
+
+  /* ---- one page per class folder / per standalone-function file ---- */
+  MODEL.pages.forEach(function(p){
+    var sec = el('section','page');
+    sec.id = 'p-' + p.id;
+
+    var crumb = p.isClass && p.parent
+      ? p.trail.slice(0, -1).map(function(n){ return esc(n); }).join(' › ') + ' › '
+      : '';
+    var methods = p.diagrams.length - (p.isClass && p.classEntry ? 1 : 0);
+    var lede = p.isClass
+      ? [methods + ' method' + (methods === 1 ? '' : 's')]
+          .concat(p.subclasses.length ? [p.subclasses.length + ' subclass' +
+            (p.subclasses.length === 1 ? '' : 'es')] : []).join(' · ')
+      : p.diagrams.length + ' function' + (p.diagrams.length === 1 ? '' : 's');
+
+    sec.innerHTML =
+      '<p class="eyebrow">' + (p.isClass ? crumb + 'Class' : 'Standalone functions') + '</p>' +
+      '<h1>' + esc(p.label) + '</h1>' +
+      '<p class="lede">' + lede + ' · <code>' +
+      esc(p.isClass ? p.folder + '/' : p.folder) + '</code></p>';
+
+    // Subclasses are separate pages, so offer them as links from the parent.
+    if (p.subclasses.length) {
+      var sub = el('p','sublinks','Subclasses: ');
+      p.subclasses.forEach(function(s, i){
+        var a = el('a', null, esc(s.name));
+        a.onclick = function(){ go(s.id, null); };
+        if (i) sub.appendChild(document.createTextNode(' · '));
+        sub.appendChild(a);
+      });
+      sec.appendChild(sub);
+    }
+
+    var tb = el('div','tabs'); tb.setAttribute('role','tablist');
+    sec.appendChild(tb);
+
+    if (!p.diagrams.length) {
+      sec.appendChild(el('p','empty','No diagrams found here.'));
+    }
+
+    p.diagrams.forEach(function(d, i){
+      var tid = 't-' + p.id + '-' + d.id;
+      var b = el('button','tab' + (i === 0 ? ' active' : '') +
+        (d.kind === KIND.class ? ' tab-class' : ''), esc(d.name));
+      b.dataset.tab = tid;
+      b.title = d.ref + '  —  ' + d.file.path;
+      tb.appendChild(b);
+
+      var panel = el('div','tabpanel' + (i === 0 ? ' active' : ''));
+      panel.id = tid;
+      panel.appendChild(diagramCard(d));
+      sec.appendChild(panel);
+    });
+
+    main.appendChild(sec);
+  });
+}
+
+function buildNav(){
+  var a0 = el('a', null, 'Index');
+  a0.dataset.page = 'p-home';
+  navlinks.appendChild(a0);
+
+  if (MODEL.classPages.length) {
+    navlinks.appendChild(el('div','navlabel','Classes'));
+    MODEL.classPages.forEach(function(p){
+      var a = el('a', null, esc(p.name));
+      a.dataset.page = 'p-' + p.id;
+      a.title = p.folder + '/';
+      // Indent subclasses so the hierarchy is visible in the dropdown.
+      if (p.depth) a.style.paddingLeft = (10 + p.depth * 12) + 'px';
+      if (p.depth) a.className = 'sub';
+      navlinks.appendChild(a);
+    });
+  }
+
+  if (MODEL.funcPages.length) {
+    navlinks.appendChild(el('div','navlabel','Standalone functions'));
+    MODEL.funcPages.forEach(function(p){
+      var a = el('a', null, esc(p.label));
+      a.dataset.page = 'p-' + p.id;
+      a.title = p.folder;
+      navlinks.appendChild(a);
+    });
+  }
+}
+
+/* ==========================================================================
+   5. NAVIGATION
+   ========================================================================== */
+function showPage(domId){
+  var target = document.getElementById(domId) || document.getElementById('p-home');
+  document.querySelectorAll('.page').forEach(function(s){ s.classList.remove('active'); });
+  target.classList.add('active');
+  document.querySelectorAll('.skipto a').forEach(function(a){
+    a.classList.toggle('active', a.dataset.page === target.id);
+  });
+  return target;
+}
+
+function showTab(pageEl, tabDomId){
+  var btn = tabDomId && pageEl.querySelector('.tab[data-tab="' + tabDomId + '"]');
+  if (!btn) btn = pageEl.querySelector('.tab');
+  if (!btn) return;
+  pageEl.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  pageEl.querySelectorAll('.tabpanel').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var panel = pageEl.querySelector('#' + cssId(btn.dataset.tab));
+  if (panel) panel.classList.add('active');
+}
+
+function cssId(s){ return (window.CSS && CSS.escape) ? CSS.escape(s) : s; }
+
+/* Routes are  #!/<page>/<class-or-function>  — the file a diagram lives in is
+   deliberately absent, so a link points at the class or function itself and
+   survives being moved to another file in the same folder. */
+var suppressHash = false;
+function go(pageId, diagramId){
+  var hash = '#!/' + (pageId === 'home' ? 'home' : pageId) + (diagramId ? '/' + diagramId : '');
+  if (location.hash === hash) applyRoute();
+  else { suppressHash = false; location.hash = hash; }
+}
+
+function goToRef(r){
+  if (!r) return;
+  if (r.kind === 'diagram') go(r.entry.page.id, r.entry.id);
+  else if (r.kind === 'file') {
+    // Files are not a destination; land on the first class/function in that file.
+    var first = r.file.diagrams[0];
+    go(r.page.id, first ? first.id : null);
+  } else go(r.page.id, null);
+}
+
+function applyRoute(){
+  var raw = location.hash.replace(/^#/,'');
+
+  // A ref arriving in the URL — pasted in the address bar, or a label link whose
+  // click we did not manage to intercept (some draw.io modes navigate natively).
+  if (raw && raw.charAt(0) !== '!' && isRef('#' + raw.replace(/^#/,''))) {
+    var ref = refFragment('#' + raw.replace(/^#/,''));
+    var r = resolveRef(ref);
+    if (r) return goToRef(r);
+    // Do NOT fall through: "#class#Foo" is not a page id, and treating it as one
+    // silently dumps you on the index, which reads as "the link did nothing".
+    explainBadRef(ref);
+    return;
+  }
+
+  var parts = raw.replace(/^!\/?/,'').split('/').filter(Boolean);
+  var pageId = parts[0] || 'home';
+  var pageEl = showPage(pageId === 'home' ? 'p-home' : 'p-' + pageId);
+
+  var tabId = null;
+  if (pageId !== 'home' && parts[1]) tabId = 't-' + pageId + '-' + parts[1];
+  else if (pageId === 'home' && parts[1]) tabId = parts[1];
+  showTab(pageEl, tabId);
+
+  retryDelay = 60;
+  renderVisible();
+  window.scrollTo(0, 0);
+}
+
+/* ==========================================================================
+   6. DIAGRAM RENDERING (lazy — a hidden container measures as 0px wide)
+   ========================================================================== */
+/* The viewer sizes itself from its container, so a container measuring 0px
+   wide draws nothing at all. That happens more often than you would think —
+   mid-layout, inside a tab that is still being shown, or in an embedded pane.
+   So a zero-width holder is left alone rather than burning its one render
+   attempt, and we come back for it. */
+var retryTimer = null, retryDelay = 60;
+
+function renderVisible(){
+  var pending = 0;
+  document.querySelectorAll('.page.active .tabpanel.active .dgm-holder').forEach(function(h){
+    renderHolder(h);
+    if (!h.dataset.rendered) pending++;
+  });
+  if (pending) scheduleRetry();
+}
+
+function scheduleRetry(){
+  if (retryTimer || retryDelay > 4000) return;   // bounded: ~8s total, then stop
+  retryTimer = setTimeout(function(){
+    retryTimer = null;
+    retryDelay *= 2;
+    renderVisible();
+  }, retryDelay);
+}
+
+window.addEventListener('resize', function(){
+  retryDelay = 60;
+  renderVisible();
+});
+
+function renderHolder(holder){
+  if (holder.dataset.rendered) return;
+  if (!holder.offsetWidth) return;               // not laid out yet; retried above
+
+  holder.dataset.rendered = '1';
+  var xml = normalizeXml(holder.dataset.xml);
+  if (typeof GraphViewer === 'undefined') {
+    holder.appendChild(el('div','note','<p>vendor/viewer-static.min.js did not load, so diagrams ' +
+      'cannot be drawn. Use the <strong>XML</strong> button to read the source.</p>'));
+    return;
+  }
+  try {
+    var node = el('div','mxgraph');
+    node.setAttribute('data-mxgraph', JSON.stringify({
+      xml: xml, highlight:'#6cc394', nav:true, resize:true,
+      toolbar:'zoom layers', 'toolbar-nohide':true, border:8
+    }));
+    holder.appendChild(node);
+    GraphViewer.createViewerForElement(node, function(viewer){
+      holder.__viewer = viewer;
+    });
+    watchForLabelRefs(holder);
+  } catch(e){
+    holder.appendChild(el('div','note','<p>Could not draw this diagram: ' + esc(e.message) +
+      '. Use the <strong>XML</strong> button to read the source.</p>'));
+  }
+}
+
+/* Accept a full <mxfile> (File → Copy as XML), the bare <mxGraphModel> that
+   "Extras → Edit Diagram" hands you, or a compressed <mxfile> — the viewer
+   reads all three. Note the inner model must NOT be entity-escaped: escaped
+   <diagram> content is treated as deflated base64 and fails to inflate. */
+function normalizeXml(xml){
+  var s = String(xml).trim();
+  if (/^<\s*mxGraphModel/i.test(s)) {
+    return '<mxfile><diagram name="Page-1">' + s + '</diagram></mxfile>';
+  }
+  return s;
+}
+
+/* ==========================================================================
+   7. INTERCEPTING REF CLICKS
+   Three layers, because draw.io routes shape links through openLink() in
+   some modes and through a plain <a> in others.
+   ========================================================================== */
+function patchOpenLink(){
+  if (typeof Graph === 'undefined' || !Graph.prototype || Graph.prototype.__wikiPatched) return;
+  Graph.prototype.__wikiPatched = true;
+  var orig = Graph.prototype.openLink;
+  Graph.prototype.openLink = function(href){
+    if (isRef(href)) { followRef(href); return null; }
+    return orig.apply(this, arguments);
+  };
+  var origCustom = Graph.prototype.isCustomLink;
+  if (origCustom) {
+    Graph.prototype.isCustomLink = function(href){
+      return isRef(href) ? true : origCustom.apply(this, arguments);
+    };
+    var origClicked = Graph.prototype.customLinkClicked;
+    Graph.prototype.customLinkClicked = function(href){
+      if (isRef(href)) { followRef(href); return true; }
+      return origClicked ? origClicked.apply(this, arguments) : false;
+    };
+  }
+}
+
+document.addEventListener('click', function(e){
+  var node = e.target, href = null;
+  for (var i = 0; node && i < 12; i++, node = node.parentNode) {
+    if (node.dataset && node.dataset.wikiref) { href = node.dataset.wikiref; break; }
+    if (node.getAttribute) {
+      var tag = (node.tagName || '').toLowerCase();
+      if (tag === 'a') {
+        href = node.getAttribute('href') ||
+               node.getAttributeNS('http://www.w3.org/1999/xlink','href');
+        break;
+      }
+    }
+  }
+  if (href && isRef(href)) { e.preventDefault(); e.stopPropagation(); followRef(href); }
+}, true);
+
+/* Refs typed into a shape's visible label. draw.io renders labels either as
+   HTML in a <foreignObject> or as SVG <text>; handle both. */
+function linkifyLabels(root){
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  var jobs = [], n;
+  while ((n = walker.nextNode())) {
+    if (n.nodeValue && n.nodeValue.indexOf('#') !== -1) {
+      REF_SCAN.lastIndex = 0;
+      if (REF_SCAN.test(n.nodeValue)) jobs.push(n);
+    }
+  }
+  jobs.forEach(function(node){
+    var parent = node.parentNode;
+    if (!parent || parent.dataset && parent.dataset.wikiref) return;
+    var inSvgText = parent.namespaceURI === 'http://www.w3.org/2000/svg';
+
+    if (inSvgText) {
+      // Can't nest markup reliably in SVG text — mark the whole run clickable
+      // and strip the ref prefix so it reads as a plain name.
+      REF_SCAN.lastIndex = 0;
+      var m = REF_SCAN.exec(node.nodeValue);
+      if (!m) return;
+      node.nodeValue = node.nodeValue.replace(m[0], m[2]);
+      parent.dataset.wikiref = m[0];
+      parent.classList.add('wikiref');
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    var text = node.nodeValue, last = 0, mm;
+    REF_SCAN.lastIndex = 0;
+    while ((mm = REF_SCAN.exec(text))) {
+      if (mm.index > last) frag.appendChild(document.createTextNode(text.slice(last, mm.index)));
+      var a = document.createElement('a');
+      a.className = 'wikiref';
+      a.setAttribute('href', mm[0].replace(/^##/,'#'));
+      a.textContent = mm[2];
+      frag.appendChild(a);
+      last = mm.index + mm[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    parent.replaceChild(frag, node);
+  });
+}
+
+function watchForLabelRefs(holder){
+  linkifyLabels(holder);
+  var obs = new MutationObserver(function(){ linkifyLabels(holder); });
+  obs.observe(holder, {childList:true, subtree:true});
+  setTimeout(function(){ linkifyLabels(holder); obs.disconnect(); }, 4000);
+}
+
+/* ==========================================================================
+   8. CHROME — tabs, nav, search overlay, toast
+   ========================================================================== */
+function wireTabs(){
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.tabs .tab');
+    if (!b) return;
+    var page = b.closest('.page');
+    showTab(page, b.dataset.tab);
+    renderVisible();
+    if (page.id !== 'p-home') {
+      var pageId = page.id.replace(/^p-/,'');
+      var diagramId = b.dataset.tab.replace('t-' + pageId + '-','');
+      suppressHash = true;
+      location.hash = '#!/' + pageId + '/' + diagramId;
+      suppressHash = false;
+    }
+  });
+}
+
+function wireNav(){
+  navlinks.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('a[data-page]');
+    if (!a) return;
+    e.preventDefault();
+    go(a.dataset.page.replace(/^p-/,'') === 'home' ? 'home' : a.dataset.page.replace(/^p-/,''), null);
+    closeMenu();
+  });
+
+  var nav = document.querySelector('.skipto');
+  var menu = nav.querySelector('.skipto-menu');
+  nav.querySelector('.skipto-toggle').addEventListener('click', function(){
+    if (getComputedStyle(menu).display !== 'none') closeMenu();
+    else { nav.classList.remove('closed'); nav.classList.add('open'); }
+  });
+  nav.addEventListener('mouseleave', function(){ nav.classList.remove('closed'); });
+  document.addEventListener('click', function(e){
+    if (!nav.contains(e.target)) nav.classList.remove('open');
+  });
+
+  var filter = nav.querySelector('.navsearch');
+  filter.addEventListener('input', function(){
+    var q = filter.value.trim().toLowerCase();
+    navlinks.querySelectorAll('a[data-page]').forEach(function(a){
+      a.style.display = (!q || a.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+    });
+    navlinks.querySelectorAll('.navlabel').forEach(function(l){
+      var any = false, s = l.nextElementSibling;
+      while (s && !s.classList.contains('navlabel')) {
+        if (s.style.display !== 'none') any = true;
+        s = s.nextElementSibling;
+      }
+      l.style.display = any ? '' : 'none';
+    });
+  });
+}
+
+function closeMenu(){
+  var nav = document.querySelector('.skipto');
+  nav.classList.remove('open');
+  nav.classList.add('closed');
+  requestAnimationFrame(function(){
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  });
+}
+
+/* --- search overlay --- */
+var ovl = document.getElementById('ovl');
+var ovlIn = document.getElementById('ovl-input');
+var ovlRes = document.getElementById('ovl-results');
+var hits = [], sel = 0;
+
+function openSearch(){
+  ovl.classList.add('open');
+  ovlIn.value = ''; ovlIn.focus(); searchNow();
+}
+function closeSearch(){ ovl.classList.remove('open'); }
+
+function searchNow(){
+  var q = ovlIn.value.trim().toLowerCase();
+  // Match on the qualified name too, so "httpclient.se" finds that method.
+  hits = MODEL.all.filter(function(e){
+    if (!q) return true;
+    var qualified = (e.owner ? e.owner + '.' : '') + e.name;
+    return qualified.toLowerCase().indexOf(q) !== -1 ||
+           e.page.label.toLowerCase().indexOf(q) !== -1 ||
+           e.file.label.toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 60);
+  sel = 0;
+  ovlRes.innerHTML = hits.length
+    ? hits.map(function(e, i){
+        return '<div' + (i === sel ? ' class="sel"' : '') + ' data-i="' + i + '">' +
+          '<span class="kind ' + e.kind.key + '">' + e.kind.label + '</span>' +
+          '<span class="n">' +
+            (e.owner ? '<span class="owner">' + esc(e.owner) + '.</span>' : '') +
+            esc(e.name) + '</span>' +
+          '<span class="w">' + esc(e.file.path) + '</span></div>';
+      }).join('')
+    : '<div style="color:var(--faint);padding:12px">Nothing matches.</div>';
+}
+
+function pick(i){
+  var e = hits[i];
+  if (!e) return;
+  closeSearch();
+  go(e.page.id, e.id);
+}
+
+ovlIn.addEventListener('input', searchNow);
+ovlRes.addEventListener('click', function(e){
+  var d = e.target.closest('div[data-i]');
+  if (d) pick(+d.dataset.i);
+});
+ovl.addEventListener('click', function(e){ if (e.target === ovl) closeSearch(); });
+
+document.addEventListener('keydown', function(e){
+  var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''));
+  if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) {
+    e.preventDefault(); openSearch(); return;
+  }
+  if (!ovl.classList.contains('open')) {
+    if (e.key === 'Escape') {
+      var z = document.querySelector('.dgm.zoomed');
+      if (z) {
+        z.classList.remove('zoomed');
+        document.body.style.overflow = '';
+        var b = z.querySelector('.dgm-actions .btn:nth-child(2)');
+        if (b) b.textContent = 'Expand';
+      }
+    }
+    return;
+  }
+  if (e.key === 'Escape') { closeSearch(); return; }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    sel = Math.max(0, Math.min(hits.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+    ovlRes.querySelectorAll('div[data-i]').forEach(function(d){
+      d.classList.toggle('sel', +d.dataset.i === sel);
+      if (+d.dataset.i === sel) d.scrollIntoView({block:'nearest'});
+    });
+    return;
+  }
+  if (e.key === 'Enter') { e.preventDefault(); pick(sel); }
+});
+
+/* --- misc --- */
+function copyText(text, cb){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ cb(true); }, function(){ cb(false); });
+    return;
+  }
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+  cb(ok);
+}
+
+var toastEl = null;
+function toast(msg, ms){
+  if (!toastEl) {
+    toastEl = el('div');
+    toastEl.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+      'z-index:400;background:var(--card);border:1px solid var(--warn);color:var(--ink);' +
+      'padding:12px 18px;border-radius:10px;font-size:13px;line-height:1.5;' +
+      'box-shadow:var(--shadow);max-width:min(680px,92vw);cursor:pointer';
+    toastEl.title = 'Click to dismiss';
+    toastEl.onclick = function(){ toastEl.style.display = 'none'; };
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = msg;
+  toastEl.style.display = 'block';
+  clearTimeout(toastEl.__t);
+  toastEl.__t = setTimeout(function(){ toastEl.style.display = 'none'; }, ms || 2600);
+}
+
+/* ==========================================================================
+   9. BOOT
+   ========================================================================== */
+function boot(){
+  patchOpenLink();
+  // The static <script src="wiki-files.js"> above may itself be cached, so a
+  // newly added FILE would be invisible. Re-fetch the list past the cache
+  // first. The standalone build has everything inline and skips this.
+  if (typeof WIKI_INLINE_SRC !== 'undefined') return start();
+  var s = document.createElement('script');
+  s.src = 'wiki-files.js' + CACHE_BUST;
+  s.onload = start;
+  s.onerror = start;          // fall back to whatever the static tag gave us
+  document.head.appendChild(s);
+}
+
+function start(){
+  var files = (typeof WIKI_FILES !== 'undefined' && WIKI_FILES) ? WIKI_FILES : [];
+  loadAll(files, function(recs){
+    buildModel(recs);
+    auditRefs();
+    buildPages();
+    buildNav();
+    wireTabs();
+    wireNav();
+    window.addEventListener('hashchange', function(){ if (!suppressHash) applyRoute(); });
+    applyRoute();
+    var kick = el('div');
+    kick.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:50';
+    var sb = el('button','btn','Search  /');
+    sb.onclick = openSearch;
+    kick.appendChild(sb);
+    document.body.appendChild(kick);
+  });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+
+})();
+</script>
+</body>
+</html>
