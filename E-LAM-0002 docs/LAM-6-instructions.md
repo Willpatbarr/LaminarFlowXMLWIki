@@ -1,8 +1,8 @@
 # <span style="color:#2AB8C9">LAM-6 — Split Into Separate Frontend and Backend Repos</span>
 
 Finish the two-repo split: give each repo a README that states its role and
-points at the other, and stop the backend's image build from pinning a dead
-frontend branch.
+points at the other, and point the backend's image build at `main` instead of a
+per-epic branch pin.
 
 [LAM-6](https://linear.app/willieworkspace/issue/LAM-6/split-into-separate-frontend-and-backend-repos)
 asks for three things. Two are already done. The ticket's own status note claimed
@@ -18,15 +18,19 @@ predated both LAM-38 and LAM-29:
 The frontend README is still the unmodified Vite + React template. That is the
 bulk of what is left.
 
+**Precondition — do this first.** Land `E-LAM-0001-B` and `E-LAM-0001-F` on
+`main` in their repos. Every step below assumes `main` carries the real work:
+Step 1 cuts the E-LAM-0002 branches from it, and Step 5 points the image build
+at it.
+
 Out of scope, flagged rather than fixed:
 
-- **The backend `image` CI job checks out the frontend repo.** That bends the
-  ticket's "zero knowledge of the other repo's toolchain" wording, but it is the
-  deliberate outcome of LAM-28 — one image serving both from one origin. The
-  `check` job, which runs the actual test suite, stays fully independent.
-- **Neither repo's `main` holds the real work.** Both are still on their initial
-  commit; everything lives on `E-LAM-0001-B` / `E-LAM-0001-F`. Landing the epic
-  on `main` is its own ticket, not this one.
+- **The backend `image` CI job checks out the frontend repo, on every commit.**
+  The `check` job is already independent — `scripts/test.sh` never touches the
+  frontend. The coupling is in the workflow's *trigger*, not the architecture.
+  [LAM-41](https://linear.app/willieworkspace/issue/LAM-41/split-the-backend-ci-so-day-to-day-pushes-dont-build-the-frontend)
+  moves the image build to tags and `workflow_dispatch`, and turns
+  `FRONTEND_REF` into a dispatch input. ADR-2 is unaffected.
 - **No folder-structure section in the frontend README.** LAM-9 owns the
   feature-based scaffold, so documenting it now would describe files that do not
   exist yet — including the router it needs and does not yet have.
@@ -45,7 +49,7 @@ Out of scope, flagged rather than fixed:
 - Step 2 — Write the frontend README
 - Step 3 — Delete the placeholder `readme.txt`
 - Step 4 — Name the backend and link the frontend
-- Step 5 — Point the image build at the current frontend branch
+- Step 5 — Point the image build at `main`
 - Step 6 — Push and verify
 
 </small>
@@ -54,8 +58,8 @@ Out of scope, flagged rather than fixed:
 
 ## Step 1 — Open the E-LAM-0002 branches
 
-Neither repo has an `E-LAM-0002` branch yet. Both epic branches cut from
-`E-LAM-0001-*`, not `main` — `main` is still the initial commit in both repos.
+Neither repo has an `E-LAM-0002` branch yet. Both epic branches cut from `main`,
+which now carries E-LAM-0001. Each ticket branch then cuts from its epic.
 
 ### <span style="color:#A16BD9">1.1 · RUN — Switch the `gh` Account</span>
 LaminarFlow pushes as `Willpatbarr`, not the work account
@@ -65,23 +69,21 @@ gh auth switch --user Willpatbarr
 ```
 
 ### <span style="color:#A16BD9">1.2 · RUN — Cut the Frontend Branches</span>
-`LaminarFlow-Frontend` — epic off `E-LAM-0001-F`, then the ticket off the epic
+`LaminarFlow-Frontend` — epic off `main`, then the ticket off the epic
 
 ```bash
 cd ~/Developer/LaminarFlow/LaminarFlow-Frontend
-git checkout E-LAM-0001-F && git pull
+git checkout main && git pull
 git checkout -b E-LAM-0002-F && git push -u origin E-LAM-0002-F
 git checkout -b LAM-6-F
 ```
-
-- `E-LAM-0002-F` has to be pushed before Step 5 — the backend CI checks it out by name
 
 ### <span style="color:#A16BD9">1.3 · RUN — Cut the Backend Branches</span>
 `LaminarFlow-Backend` — same shape, `-B` suffix
 
 ```bash
 cd ~/Developer/LaminarFlow/LaminarFlow-Backend
-git checkout E-LAM-0001-B && git pull
+git checkout main && git pull
 git checkout -b E-LAM-0002-B && git push -u origin E-LAM-0002-B
 git checkout -b LAM-6-B
 ```
@@ -163,7 +165,7 @@ cd ~/Developer/LaminarFlow/LaminarFlow-Frontend
 git rm readme.txt
 ```
 
-- it is the only file on the frontend's `main`, so leave `main` alone — delete it here only
+- `readme.txt` reaches `main` with the epic; this removes it on the ticket branch
 
 ---
 
@@ -189,11 +191,11 @@ the title never said which half of the split this repo is
 
 ---
 
-## Step 5 — Point the image build at the current frontend branch
+## Step 5 — Point the image build at `main`
 
-### <span style="color:#D98C3B">5.1 · EDIT — Bump `FRONTEND_REF` to `E-LAM-0002-F`</span>
+### <span style="color:#D98C3B">5.1 · EDIT — Set `FRONTEND_REF` to `main`</span>
 `LaminarFlow-Backend/.github/workflows/ci.yml:59-61`
-`E-LAM-0001-F` stops receiving frontend work the moment Step 1.2 lands
+the branch pin existed only because `main` was empty
 
 ```diff
      env:
@@ -201,16 +203,19 @@ the title never said which half of the split this repo is
 -      # E-LAM-0001-F rather than main because main is still the initial commit
 -      # and has no package.json. Change this to main once the epic lands.
 -      FRONTEND_REF: E-LAM-0001-F
-+      # An epic branch rather than main: main is still the initial commit and
-+      # has no package.json. Bump this when a new epic branch opens.
-+      FRONTEND_REF: E-LAM-0002-F
++      # main, now that E-LAM-0001 has landed there. The image job builds the
++      # backend under test against the last frontend that shipped.
++      FRONTEND_REF: main
 ```
 
 - **Why:**
-  - **C** — left alone, the image job builds a frontend that no longer moves,
-    so a broken bundle passes CI
+  - **C** — a branch pin goes stale every epic; `main` does not
 - **Where:**
   - the `env:` block on the `image` job, not the `check` job
+
+**This is what the original comment asked for** — "Change this to main once the
+epic lands." LAM-41 later replaces the constant entirely with a
+`workflow_dispatch` input, so a release can pin an exact frontend version.
 
 ---
 
@@ -225,7 +230,7 @@ npm ci && npm run lint && npm run build
 ```
 
 ### <span style="color:#A16BD9">6.2 · RUN — Push Both Ticket Branches</span>
-`LAM-6-F` first — Step 5.1 fails CI until `E-LAM-0002-F` exists on origin
+order does not matter — Step 5.1 points at `main`, not at either ticket branch
 
 ```bash
 cd ~/Developer/LaminarFlow/LaminarFlow-Frontend && git push -u origin LAM-6-F
