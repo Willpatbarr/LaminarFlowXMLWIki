@@ -344,7 +344,9 @@ node build.js
 ```
 
 It rewrites `wiki-files.js` (required for any new file or folder), regenerates `xml/` — one
-`.drawio` per card, the raw `<mxGraphModel>`, via `export-xml.js` — and prints warnings:
+`.drawio` per card, the raw `<mxGraphModel>`, via `export-xml.js` — and `wiki-bundle.js` —
+every card's source, which is what renders when the page is viewed inside Obsidian — and
+prints warnings:
 duplicate class/function names, missing class diagrams, files sitting directly in
 `classes/`, unassignable names. **Fix every warning your change caused**, then re-run.
 Report any pre-existing warnings you did not introduce rather than silently fixing

@@ -278,6 +278,7 @@ text.wikiref{fill:var(--accent) !important; cursor:pointer; text-decoration:unde
 
 <script src="vendor/viewer-static.min.js"></script>
 <script src="wiki-files.js"></script>
+<script src="wiki-bundle.js"></script>
 <script>
 /* =========================================================================
    LaminarFlow XMLWiki — renders every diagram under classes/ and standaloneFunctions/
@@ -418,7 +419,24 @@ function loadFile(path, cb){
 
   s.src = path + CACHE_BUST;
   s.onload  = function(){ finish(null); };
-  s.onerror = function(){ finish('File not found (check the path in wiki-files.js).'); };
+  s.onerror = function(){
+    // Could not fetch the file. Inside an HTML viewer that renders this page from
+    // a string (Obsidian's Style HTML Viewer shows it in a srcdoc iframe), a
+    // relative path has nowhere to resolve to, but the static
+    // <script src="wiki-bundle.js"> tag was rewritten and did load — so run the
+    // bundled copy of this file instead. A browser opened on the folder never
+    // gets here, so a saved card edit still shows on a plain refresh there.
+    var bundled = (typeof WIKI_BUNDLE_SRC !== 'undefined') && WIKI_BUNDLE_SRC[path];
+    if (typeof bundled === 'string') {
+      var b = document.createElement('script');
+      b.textContent = bundled;
+      document.head.appendChild(b);
+      if (b.parentNode) b.parentNode.removeChild(b);
+      finish(null);
+      return;
+    }
+    finish('File not found (check the path in wiki-files.js).');
+  };
   document.head.appendChild(s);
 }
 

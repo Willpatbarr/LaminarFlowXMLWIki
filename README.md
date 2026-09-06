@@ -245,8 +245,9 @@ node build.js
 
 Adding a diagram to a file already in that list needs neither — just refresh.
 
-`node build.js` also regenerates `xml/` — see **Each card as its own file** below — so run
-it after changing a card's XML too if you want the standalone copy to follow.
+`node build.js` also regenerates two derived files — `xml/` (see **Each card as its own
+file** below) and `wiki-bundle.js` (see **Viewing it inside Obsidian**) — so run it after
+changing a card's XML too if you want those copies to follow.
 
 ---
 
@@ -274,6 +275,24 @@ Open, or drag it in), or paste its contents into **Extras → Edit Diagram**.
 
 `xml/` is generated. Edit the `.js` card and rerun `node build.js` (or `node export-xml.js`
 on its own); the `.drawio` follows. Editing a `.drawio` changes nothing in the wiki.
+
+---
+
+## Viewing it inside Obsidian
+
+The vault's **Style HTML Viewer** plugin renders `wiki.html` fine, with one catch: it
+resolves the `<script src>` tags it can see in the file, then shows the page in a
+`srcdoc` iframe. Anything the page tries to fetch *after* that — which is how the card
+files are normally loaded — has no base URL to resolve against, and every card comes back
+"File not found".
+
+So `build.js` also writes **`wiki-bundle.js`**: every card file's source, keyed by path,
+as `WIKI_BUNDLE_SRC`. `wiki.html` includes it statically, and the loader falls back to
+it whenever a fetch fails. In a browser the fetch succeeds and the bundle is never read,
+so a saved card edit still shows on a plain refresh. In Obsidian the bundle is what
+renders, so a card edit shows up there after the next `node build.js`.
+
+`wiki-bundle.js` is generated. Do not edit it; edit the card and rebuild.
 
 ---
 
@@ -308,6 +327,7 @@ Writes `wiki.standalone.html` (~4 MB) with the renderer and every diagram baked 
 offline, no folders needed.
 
 `node build.js --check` exits non-zero if `wiki-files.js` is stale, for a pre-commit hook.
+(It does not check `wiki-bundle.js` or `xml/`; a plain `node build.js` refreshes both.)
 
 To hand someone one *diagram* rather than the wiki, send them its `.drawio` from `xml/`.
 
