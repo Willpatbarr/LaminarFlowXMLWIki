@@ -7,6 +7,10 @@
  *                              file with the viewer and every diagram baked in,
  *                              for emailing / dropping in a shared drive
  *
+ * Every run also regenerates xml/ — one .drawio file per card, holding the raw
+ * <mxGraphModel> — via export-xml.js, so each diagram can be opened in draw.io
+ * on its own.
+ *
  * You only need this when you add or rename a FILE or FOLDER. Adding a diagram
  * to a file that wiki-files.js already lists needs nothing but a page refresh.
  *
@@ -223,6 +227,10 @@ if (warnings.length) {
   console.log('');
   warnings.forEach(w => console.warn('  warning: ' + w));
 }
+
+/* One .drawio per card under xml/, for use outside the wiki. */
+console.log('');
+require('./export-xml.js').exportAll(files);
 
 if (args.includes('--inline')) {
   const size = inline(files);

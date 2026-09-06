@@ -29,7 +29,7 @@ The input **must** come down to one or more types or functions. Accepted forms:
 | --- | --- |
 | `Server` | that Go struct / TS class |
 | `Server.Handle` | that one method |
-| `healthzHandler` | that standalone function |
+| `registerPing` | that standalone function |
 | a file path | every type and top-level function declared in it |
 | a directory or glob | same, for every source file under it |
 | `backend` / `frontend` | everything currently undocumented in that repo |
@@ -80,9 +80,10 @@ Per standalone-function target: one function card in
 `standaloneFunctions/<end>/<SourceFile>.js`, appended in source order if the file already
 exists.
 
-Create folders and files as needed. LaminarFlow is small enough that inline is the normal
-case; fan out to subagents only past 3 source files (authoring.md §9) and validate
-everything they return.
+Create folders and files as needed. Fan out to subagents past 3 source files
+(authoring.md §9) and validate everything they return. Placement collisions — a repeated
+basename, a repeated function name — are resolved per authoring.md §3 before dispatch, so
+every agent gets the final wiki name.
 
 ## 5. Validate, then build
 
@@ -110,7 +111,5 @@ pre-existing warnings in unrelated files without touching them.
 - `build.js` output: diagram counts, and any warnings — yours fixed, others listed
 - refs pointing at types that are not in the wiki yet — expected and fine, the wiki is
   deliberately partial, but list them so the user knows the Doctor tab will show them
-- if this run wrote the wiki's **first class card**, say so — authoring.md §2 points future
-  runs at the worked examples, and a class example is currently missing
 
 Do not commit anything.

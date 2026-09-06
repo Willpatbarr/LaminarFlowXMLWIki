@@ -22,7 +22,7 @@ Same engine as [XMLWiki](https://github.com/Willpatbarr/XMLWiki), separate conte
 
 Both ends live in the same wiki. The **first box of every card** is the location path, and
 it starts with the repo name — `LaminarFlow-Backend/main.go`,
-`LaminarFlow-Frontend/src/App.tsx` — so a card always says which end it belongs to.
+`LaminarFlow-Frontend/src/main.tsx` — so a card always says which end it belongs to.
 
 Function pages are grouped one level deeper to match:
 
@@ -31,7 +31,7 @@ standaloneFunctions/
   backend/
     main_go.js
   frontend/
-    App_tsx.js
+    Button_tsx.js
     main_tsx.js
 ```
 
@@ -40,20 +40,65 @@ see **Structure** below.
 
 ### What's carded right now
 
-LaminarFlow is early. Four cards cover all of it:
+Everything E-LAM-0001 and E-LAM-0002 left behind — both repos as they stand on `main`
+after epic 2. Test sources, generated files, configs and tooling scripts are not carded.
 
-| Card | Source |
-| --- | --- |
-| `main` | `LaminarFlow-Backend/main.go` — reads `PORT`, builds the mux, serves |
-| `healthzHandler` | the anonymous `GET /healthz` handler literal in the same file |
-| `App` | `LaminarFlow-Frontend/src/App.tsx` — still the untouched Vite starter scaffold |
-| `main_tsx` | `LaminarFlow-Frontend/src/main.tsx` — mounts the React tree under StrictMode |
+**Backend — `classes/`** (Go structs; one folder per type)
 
-`classes/` is empty on purpose: neither end declares a type yet. The first Go struct or TS
-class gets the first folder in there.
+| Class | Source | Methods |
+| --- | --- | --- |
+| `Config` | `internal/config/config.go` | — |
+| `PingBody`, `PingOutput` | `internal/api/ping.go` | — |
+| `Service` | `internal/document/document.go` | `Save`, `RebuildIndex` |
+| `indexedDoc` | `internal/document/document.go` | — |
+| `handler` | `internal/frontend/frontend.go` | `ServeHTTP`, `serveFile` |
+| `Migration`, `Record` | `internal/migrate/migrate.go` | — |
 
-`App` is boilerplate, and its card says so. When the real app shell replaces it, redraw the
-card rather than patching around it.
+**Backend — `standaloneFunctions/backend/`** (package-level funcs; one page per source file)
+
+| Page | Source | Cards |
+| --- | --- | --- |
+| `main_go` | `main.go` | `main`, `ensureSchema`, `frontendFS`, `healthcheck` |
+| `cmd / migrate / main_go` | `cmd/migrate/main.go` | `main_migrate`, `usage` |
+| `cmd / openapi / main_go` | `cmd/openapi/main.go` | `main_openapi` |
+| `cmd / reindex / main_go` | `cmd/reindex/main.go` | `main_reindex` |
+| `api_go` | `internal/api/api.go` | `writeJSON`, `notFound` |
+| `health_go` | `internal/api/health.go` | `live`, `ready` |
+| `openapi_go` | `internal/api/openapi.go` | `NewHumaAPI` |
+| `ping_go` | `internal/api/ping.go` | `registerPing` |
+| `routes_go` | `internal/api/routes.go` | `NewMux` |
+| `config_go` | `internal/config/config.go` | `config_Load`, `getenv` |
+| `db_go` | `internal/db/db.go` | `Connect`, `Check` |
+| `document_go` | `internal/document/document.go` | `NewService`, `indexBody` |
+| `text_go` | `internal/document/text.go` | `fieldText` |
+| `frontend_go` | `internal/frontend/frontend.go` | `New` |
+| `migrate_go` | `internal/migrate/migrate.go` | `migrate_Load`, `split` |
+| `runner_go` | `internal/migrate/runner.go` | `withLock`, `appliedVersions`, `Up`, `Down`, `apply`, `Status`, `Pending`, `Baseline` |
+
+**Frontend — `standaloneFunctions/frontend/`** (components, hooks, module entries)
+
+| Page | Source | Cards |
+| --- | --- | --- |
+| `main_tsx` | `src/main.tsx` | `main_tsx` — mounts the router under StrictMode |
+| `__root_tsx` | `src/routes/__root.tsx` | `RootLayout` |
+| `index_tsx` | `src/routes/index.tsx` | `HomePage` |
+| `TicketList_tsx` | `src/features/tickets/components/TicketList.tsx` | `TicketList` |
+| `Button_tsx` | `src/components/ui/Button.tsx` | `Button` |
+| `client_ts` | `src/api/client.ts` | `client_ts` — the typed `openapi-fetch` client |
+| `ping_ts` | `src/api/ping.ts` | `getPing` |
+
+Not carded, on purpose: `internal/dbtest` (test harness), `migrations/embed.go` and
+`web/embed.go` (a `//go:embed` var each, no functions), `src/api/schema.d.ts` and
+`src/routeTree.gen.ts` (generated), `scripts/*.mjs` (tooling), every `*_test.go` /
+`*.test.tsx` / `e2e/`, and the config files.
+
+A few names are not the source's, because the wiki needs them unique:
+
+| Wiki name | Source | Why |
+| --- | --- | --- |
+| `main_migrate`, `main_openapi`, `main_reindex` | `func main()` in each `cmd/<bin>/main.go` | `main` is the root `main.go` |
+| `config_Load`, `migrate_Load` | `config.Load`, `migrate.Load` | two `Load`s |
+| `client_ts`, `main_tsx` | whole-module files | they declare no function |
 
 ---
 
@@ -68,8 +113,12 @@ classes/
 standaloneFunctions/
   backend/
     main_go.js                    functions that belong to no class
+    cmd/
+      migrate/
+        main_go.js                nested when a basename repeats in one end
   frontend/
-    App_tsx.js                    each file is its own page
+    main_tsx.js                   each file is its own page
+xml/                              GENERATED by build.js — one .drawio per card
 ```
 
 | On disk | In the wiki |
@@ -91,7 +140,12 @@ Doctor tab flags the mismatch.
 ### File naming
 
 Mirror the source file, with the extension as a suffix: `main.go` → `main_go.js`,
-`App.tsx` → `App_tsx.js`. (XMLWiki uses `_kt` for the same reason.)
+`Button.tsx` → `Button_tsx.js`. (XMLWiki uses `_kt` for the same reason.)
+
+When two source files in the same end share a basename — Go's `cmd/<bin>/main.go` is the
+usual case — nest the second one under the source directory that tells them apart:
+`standaloneFunctions/backend/cmd/migrate/main_go.js`. The nav shows the folder trail, so
+the page reads `backend / cmd / migrate / main_go`.
 
 ---
 
@@ -106,9 +160,9 @@ send = `<mxGraphModel>…</mxGraphModel>`;
 That is the whole workflow. Get the XML from draw.io via **Extras → Edit Diagram**, or
 **File → Copy as XML** / Ctrl+C on a selection. Compressed or not, both work.
 
-Single quotes work too, and some cards need them: `healthzHandler` quotes a Go raw string
-literal, which contains backticks, so `standaloneFunctions/backend/main_go.js` is
-single-quoted throughout. A backtick or `${` inside a template literal would end the string
+Single quotes work too, and some cards need them: `live` quotes a Go raw string literal,
+which contains backticks, so `standaloneFunctions/backend/health_go.js` is single-quoted
+throughout — as is every card in this wiki, by house rule. A backtick or `${` inside a template literal would end the string
 early.
 
 ### Naming rules
@@ -166,8 +220,8 @@ refs; the Doctor tab lists every one.
 
 Every card has a **Copy ref** button giving the exact string, already qualified.
 
-Cross-end links are fine and encouraged: when the frontend starts calling `GET /healthz`,
-the fetch line in that card should link to `#func#healthzHandler`.
+Cross-end links are fine and encouraged: `getPing` fetches `GET /api/v1/ping`, so its
+fetch line links to `#func#registerPing`, the handler that declares that route.
 
 ---
 
@@ -190,6 +244,36 @@ node build.js
 ```
 
 Adding a diagram to a file already in that list needs neither — just refresh.
+
+`node build.js` also regenerates `xml/` — see **Each card as its own file** below — so run
+it after changing a card's XML too if you want the standalone copy to follow.
+
+---
+
+## Each card as its own file
+
+The page shows every card's XML (the **XML** button), but a card wrapped in a JS string
+literal is awkward to reuse anywhere else. So `build.js` also writes each diagram out as
+a plain `.drawio` file, byte for byte the same `<mxGraphModel>` the page renders:
+
+```
+xml/
+  classes/Service/document_go/
+    Service.drawio                the class card
+    Save.drawio                   one per method
+    RebuildIndex.drawio
+  standaloneFunctions/backend/main_go/
+    main.drawio
+    ensureSchema.drawio
+    …
+```
+
+The folder mirrors the wiki file that owns the card, minus `.js`, so two cards with the
+same name in different files never collide. Open a `.drawio` in draw.io directly (File →
+Open, or drag it in), or paste its contents into **Extras → Edit Diagram**.
+
+`xml/` is generated. Edit the `.js` card and rerun `node build.js` (or `node export-xml.js`
+on its own); the `.drawio` follows. Editing a `.drawio` changes nothing in the wiki.
 
 ---
 
@@ -225,6 +309,8 @@ offline, no folders needed.
 
 `node build.js --check` exits non-zero if `wiki-files.js` is stale, for a pre-commit hook.
 
+To hand someone one *diagram* rather than the wiki, send them its `.drawio` from `xml/`.
+
 ---
 
 ## Keeping it honest
@@ -256,6 +342,7 @@ It loads when Claude Code's project directory is this repo.
 | `XMLwiki/SKILL.md` | the router |
 | `XMLwiki/authoring.md` | the real reference — roots, box order, geometry, escaping, refs. Both operations read it first |
 | `XMLwiki/validate.js` | `node .claude/skills/XMLwiki/validate.js . <file…>` — structural check to run before `build.js` |
+| `../export-xml.js` (wiki root) | writes `xml/` — one `.drawio` per card. `build.js` calls it; not part of the skill |
 | `XMLwiki-create/SKILL.md`, `XMLwiki-update/SKILL.md` | the two operations |
 
 This is the LaminarFlow copy, adapted from the user-level `~/.claude/skills/XMLwiki` that
@@ -292,7 +379,7 @@ box and its order; swap the language-specific words:
 | keywords | `package main`, `type … struct`, `interface` | `export default`, `type`, `interface`, `const` |
 | signature | `func Name(a T) (T, error)` | `function Name(props: Props)` |
 | returns | second return value is the error — say what it means | `JSX.Element`, `Promise<T>` |
-| attributes | struct fields, `+` exported / `- ` unexported | class fields or the props type |
+| attributes | struct fields, `+` exported / `~` unexported (Go has no private) | class fields or the props type |
 | methods | methods with a receiver, receiver named in the box | class methods, or hooks the component calls |
 
 Go has no classes, so a struct with methods still earns a `classes/<Struct>/` folder: the

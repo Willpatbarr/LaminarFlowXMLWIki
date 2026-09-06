@@ -75,13 +75,15 @@ table under **Adapting the templates to Go and TypeScript** — read it too.
 
 For filled-in worked examples in the right languages, read:
 
-- `$WIKI/standaloneFunctions/backend/main_go.js` — two Go function cards, one of them the
-  anonymous-handler case
-- `$WIKI/standaloneFunctions/frontend/App_tsx.js` — a React component card, including how
-  JSX gets escaped
-
-There is no class card in this wiki yet. The first one to write it follows the template and
-the box order in §4, and should say so in the report so the next run has an example.
+- `$WIKI/classes/Service/document_go.js` — a Go struct with a `NewX` factory and two
+  methods: the class card, then a method card with its `Service::` box
+- `$WIKI/classes/Config/config_go.js` — a plain struct: fields only, no factory, no methods
+- `$WIKI/standaloneFunctions/backend/health_go.js` — Go funcs returning a closure, with a
+  raw-string body
+- `$WIKI/standaloneFunctions/frontend/TicketList_tsx.js` — a React component card, including
+  how a JSX tree gets escaped
+- `$WIKI/standaloneFunctions/frontend/main_tsx.js` — a whole-module card for a file that
+  declares no function
 
 ---
 
@@ -101,7 +103,19 @@ that way: class and standalone-function names are unique wiki-wide, so a class f
 directly under `classes/`, and its location box carries the repo name.
 
 `<SourceFile>` is the source file's basename with every `.` turned into `_`:
-`main.go` → `main_go.js`, `App.tsx` → `App_tsx.js`. One wiki file per source file.
+`main.go` → `main_go.js`, `Button.tsx` → `Button_tsx.js`. One wiki file per source file.
+
+**Two collisions the naming has to dodge:**
+
+- *Same basename twice in one end* — Go's `cmd/<bin>/main.go` files. Nest the page under the
+  source directory that tells them apart: `standaloneFunctions/backend/cmd/migrate/main_go.js`.
+  The nav renders the trail (`backend / cmd / migrate / main_go`). The root `main.go` stays
+  flat at `standaloneFunctions/backend/main_go.js`.
+- *Same function name twice wiki-wide* — every `cmd` binary's `func main()`, or `config.Load`
+  vs `migrate.Load`. Suffix or prefix with what disambiguates and say so in the card's box 3:
+  `main_migrate`, `main_openapi`, `main_reindex`; `config_Load`, `migrate_Load`. A file that
+  declares no function but earns a card (module-level code) is named after the file:
+  `main_tsx`, `client_ts`.
 
 Go has no classes. A struct with methods still earns a `classes/<Struct>/` folder: the
 struct is the class diagram, each method a tab. A plain func goes in
@@ -137,7 +151,7 @@ never leave a box holding template hint text.
 ### Class card
 
 1. **Location path** — always, and **prefixed with the repo name**:
-   `LaminarFlow-Backend/main.go`, `LaminarFlow-Frontend/src/App.tsx`. This is how a reader
+   `LaminarFlow-Backend/main.go`, `LaminarFlow-Frontend/src/main.tsx`. This is how a reader
    tells the two ends apart; it is not optional and it is not repo-relative.
 2. **`Outer::`** — only if declared inside another type. Linked, and keep both colons.
 3. **Supertypes** — Go: embedded types and the interfaces the type satisfies, when the code
@@ -170,8 +184,8 @@ supertypes sit directly under the outer-type box.
    colons kept. Name the receiver's type, not the receiver variable.
 3. **Annotations / keywords** — Go: `package main`, `go`-routine entry, `defer`-heavy.
    TS/React: `export default`, `async`, `React function component`, `hook`. Only if any
-   apply. This is also where a card says something a reader needs up front — the `App` card
-   uses it to shout that the component is still the Vite scaffold.
+   apply. This is also where a card says something a reader needs up front — the
+   `main_migrate` card uses it to say the function is really `main`, renamed for the wiki.
 4. **`func name(params)`** / **`function name(params)`** — always. One param per line when
    there is more than one. For an anonymous func, write `func(` and say in box 3 where it
    is registered.
@@ -183,7 +197,7 @@ supertypes sit directly under the outer-type box.
    never wrapped mid-call. Group into beats with one blank line between beats. Link calls
    to anything that has a card. Comments say *why*, not *what*, condensed to 1–2 lines.
    Pseudo-code when the real body is enormous — a JSX tree is the usual case, and
-   `App_tsx.js` shows the house way to condense one.
+   `TicketList_tsx.js` shows the house way to condense one.
 
 Boxes 5 and 6 are never dropped. That is the rule people get wrong most often, and
 `validate.js` checks it — including for Go's `func`, which the upstream validator misses.
@@ -233,7 +247,7 @@ At width 620 about 72 characters fit; at 760, about 88.
 | --- | --- |
 | `#class#Server` | a class card |
 | `#func#Server.Handle` | a **method** — always qualified by its type |
-| `#func#healthzHandler` | a standalone function |
+| `#func#registerPing` | a standalone function |
 | `#page#Server` | a class page |
 
 **Qualify every method ref.** A bare `#func#Handle` only ever resolves to a *standalone*
@@ -329,7 +343,8 @@ Then, from the wiki root:
 node build.js
 ```
 
-It rewrites `wiki-files.js` (required for any new file or folder) and prints warnings:
+It rewrites `wiki-files.js` (required for any new file or folder), regenerates `xml/` — one
+`.drawio` per card, the raw `<mxGraphModel>`, via `export-xml.js` — and prints warnings:
 duplicate class/function names, missing class diagrams, files sitting directly in
 `classes/`, unassignable names. **Fix every warning your change caused**, then re-run.
 Report any pre-existing warnings you did not introduce rather than silently fixing
@@ -345,14 +360,14 @@ the only check that resolves every ref.
 Scale like this:
 
 - **≤ 3 source files** — do the whole thing inline. Dispatching costs more than it saves.
-  **LaminarFlow is currently well under that**, so inline is the normal case; do not reach
-  for subagents on a repo this size.
+  A single ticket's delta is usually this size.
 - **> 3 source files** — one subagent per **source file**. Never split a source file across
   agents: a class and all of its methods live in one wiki file, so two agents editing it
   would clobber each other. Run in parallel batches of at most 6.
 
-Use the `Agent` tool with `subagent_type: general-purpose` and `model: haiku` — these are
-mechanical transcription jobs, and a cheap model is the point.
+Use the `Agent` tool with `subagent_type: general-purpose`. `model: haiku` is the default
+for a mechanical re-sync; the user may ask for `opus` on a large create run (the epic-2 fill
+used opus), and the validation below applies either way.
 
 Each subagent prompt must carry:
 
@@ -362,8 +377,10 @@ Each subagent prompt must carry:
    which end it is (`backend` / `frontend`) and therefore the language;
 3. an instruction to read `$WIKI/README.md`'s `## Diagram Templates:` section and
    `$WIKI/.claude/skills/XMLwiki/authoring.md` first, and to copy the matching worked
-   example — `standaloneFunctions/backend/main_go.js` for Go,
-   `standaloneFunctions/frontend/App_tsx.js` for TypeScript — as the style reference.
+   example from §2 — `classes/Service/document_go.js` and `standaloneFunctions/backend/health_go.js`
+   for Go, `standaloneFunctions/frontend/TicketList_tsx.js` for TypeScript — as the style
+   reference. Give every agent the same name map (wiki name → source symbol) for the whole
+   run, so cross-links agree.
 
 Do **not** paste the templates into the prompt. Having the agent read them keeps the prompt
 small and keeps it current if the user edits a template.

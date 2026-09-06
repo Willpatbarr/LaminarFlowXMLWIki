@@ -97,11 +97,10 @@ For each entry, read the real declaration in `$SRC` and compare box by box.
 After any move or rename, `y` values still have to stack (authoring.md §5) and every dropped
 box's space has to close up.
 
-**The scaffold case.** `standaloneFunctions/frontend/App_tsx.js` currently documents the
-unmodified Vite starter, and its box 3 says so in caps. The first time real LaminarFlow UI
-replaces that component, **redraw the card from scratch** rather than diffing box by box,
-and delete the scaffold warning. Same for any other card whose box 3 carries that kind of
-notice.
+**The rewrite case.** When a card's box 3 carries a notice that the code is a placeholder
+or scaffold, and the real thing has replaced it, **redraw the card from scratch** rather than
+diffing box by box, and delete the notice. (`TicketList` currently says its data is a
+placeholder until the API contract is consumed — that is the next one.)
 
 ## 4. Delete what the code no longer has
 
@@ -123,9 +122,9 @@ So is a file that moved between the two repos.
 
 ## 5. Large scopes: subagents
 
-Past 3 source files, one haiku subagent per source file, batches of 6, per authoring.md §9.
-LaminarFlow is currently far below that line — inline is the normal case. Give each agent
-the operation, the exact target list, the source path, the wiki path, and which end it is.
+Past 3 source files, one subagent per source file, batches of 6, per authoring.md §9. A
+single ticket's delta is usually inline-sized; an epic's is not. Give each agent the
+operation, the exact target list, the source path, the wiki path, and which end it is.
 
 Validate every returned file — validator clean, card re-checked against the real
 declaration, placement confirmed. Do not relay an agent's report as fact.
