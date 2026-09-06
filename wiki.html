@@ -59,7 +59,10 @@ main{
    run off-screen or eat a fixed slice of width the diagrams want. */
 .skipto{
   position:fixed; top:10px; left:10px;
-  z-index:60; display:flex; flex-direction:column; gap:5px;
+  /* draw.io's viewer toolbar sits at z-index 999 (its layers popup at 1000), so the
+     wiki's own layers start above that: nav 1100, expanded diagram 1200, overlay
+     1300, warning banner 1400. Same order as before, just lifted clear of the viewer. */
+  z-index:1100; display:flex; flex-direction:column; gap:5px;
   background:var(--card); border:1px solid var(--border);
   border-radius:12px; padding:5px; box-shadow:var(--shadow);
   width:auto;
@@ -168,7 +171,7 @@ main{
 }
 .dgm-body .mxgraph{max-width:100%}
 .dgm.zoomed{
-  position:fixed; inset:0; z-index:200; margin:0; border-radius:0;
+  position:fixed; inset:0; z-index:1200; margin:0; border-radius:0;
   display:flex; flex-direction:column;
 }
 .dgm.zoomed .dgm-body{flex:1; overflow:auto}
@@ -214,7 +217,7 @@ td code{font-size:11.5px}
 
 /* ---------- search overlay ---------- */
 .ovl{
-  position:fixed; inset:0; z-index:300; background:rgba(10,12,14,.72);
+  position:fixed; inset:0; z-index:1300; background:rgba(10,12,14,.72);
   display:none; align-items:flex-start; justify-content:center; padding:12vh 16px 16px;
 }
 .ovl.open{display:flex}
@@ -1489,7 +1492,7 @@ function toast(msg, ms){
   if (!toastEl) {
     toastEl = el('div');
     toastEl.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
-      'z-index:400;background:var(--card);border:1px solid var(--warn);color:var(--ink);' +
+      'z-index:1400;background:var(--card);border:1px solid var(--warn);color:var(--ink);' +
       'padding:12px 18px;border-radius:10px;font-size:13px;line-height:1.5;' +
       'box-shadow:var(--shadow);max-width:min(680px,92vw);cursor:pointer';
     toastEl.title = 'Click to dismiss';
