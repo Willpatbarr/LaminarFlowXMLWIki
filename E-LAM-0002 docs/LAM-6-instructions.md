@@ -1,5 +1,7 @@
 # <span style="color:#2AB8C9">LAM-6 — Split Into Separate Frontend and Backend Repos</span>
 
+## Notes
+
 Finish the two-repo split: give each repo a README that states its role and
 points at the other, and point the backend's image build at `main` instead of a
 per-epic branch pin.
@@ -13,10 +15,12 @@ predated both LAM-38 and LAM-29:
 | --- | --- |
 | 1. Two separate repos | **Done** under E-LAM-0001 — separate `.git`, separate remotes |
 | 2. Independent CI in each | **Done** — `.github/workflows/ci.yml` exists in both |
-| 3. A README in each stating its role | **Backend partial, frontend not started** |
+| 3. A README in each stating its role | **Both partial — neither links the other** |
 
-The frontend README is still the unmodified Vite + React template. That is the
-bulk of what is left.
+Both READMEs already state their role: the backend's since LAM-4, the frontend's
+since LAM-28 rewrote it. What neither does is **link the other repo** — the half
+of ticket step 3 that is actually outstanding. The frontend also still carries
+three sections of leftover Vite template.
 
 **Precondition — do this first.** Land `E-LAM-0001-B` and `E-LAM-0001-F` on
 `main` in their repos. Every step below assumes `main` carries the real work:
@@ -46,7 +50,7 @@ Out of scope, flagged rather than fixed:
 <small>
 
 - Step 1 — Open the E-LAM-0002 branches
-- Step 2 — Write the frontend README
+- Step 2 — Finish the frontend README
 - Step 3 — Delete the placeholder `readme.txt`
 - Step 4 — Name the backend and link the frontend
 - Step 5 — Point the image build at `main`
@@ -90,27 +94,30 @@ git checkout -b LAM-6-B
 
 ---
 
-## Step 2 — Write the frontend README
+## Step 2 — Finish the frontend README
 
-<span style="color:#C95B7A">REPLACE GUIDED</span>
+`LaminarFlow-Frontend/README.md`
 
-**Example** — `LaminarFlow-Backend/README.md:1-16`
-the sibling README `LaminarFlow-Frontend/README.md` mirrors in tone — short
-sections, each pointing at the file that owns the detail
+LAM-28 already wrote the title, the role line, and a `Same-origin deployment`
+section. Three sections are missing, and three sections of Vite template remain.
 
-`LaminarFlow-Frontend/README.md (replaces the Vite template)`
+### <span style="color:#D98C3B">2.1 · EDIT — Link the Backend Repo</span>
+`README.md:3`
+the one thing ticket step 3 literally requires, and the only part absent
 
-### <span style="color:#C95B7A">2.1 — Add the Title and Role</span>
-```markdown
-# LaminarFlow — Frontend
-
-The React + TypeScript client for LaminarFlow, a Linear clone with some added
-functionality. The Go API, schema, and migrations live in
-[LaminarFlow-Backend](https://github.com/Willpatbarr/LaminarFlow-Backend).
+```diff
+ # LaminarFlow — Frontend
+ 
+ React + TypeScript + Vite. Built with `npm run build` into `dist/`.
++
++The Go API, schema, and migrations live in
++[LaminarFlow-Backend](https://github.com/Willpatbarr/LaminarFlow-Backend).
 ```
-- the role sentence plus the cross-link is the whole of ticket step 3
 
-### <span style="color:#C95B7A">2.2 — Add the `Running it` Section</span>
+### <span style="color:#3DAF62">2.2 · ADD — Add the `Running it` Section</span>
+`README.md:18`
+after `Same-origin deployment`, before the template sections 2.5 removes
+
 ```markdown
 ## Running it
 
@@ -121,7 +128,10 @@ same file, so local and CI cannot drift.
     npm run dev
 ```
 
-### <span style="color:#C95B7A">2.3 — Add the `Checks` Section</span>
+### <span style="color:#3DAF62">2.3 · ADD — Add the `Checks` Section</span>
+`README.md:18`
+directly after 2.2
+
 ```markdown
 ## Checks
 
@@ -133,7 +143,10 @@ type error fails the build rather than shipping.
 ```
 - `npm test` is deliberately absent — LAM-40 adds both the script and that line
 
-### <span style="color:#C95B7A">2.4 — Add the `Postgres` Boundary Section</span>
+### <span style="color:#3DAF62">2.4 · ADD — Add the Postgres Boundary Section</span>
+`README.md:18`
+directly after 2.3
+
 ```markdown
 ## This repo never talks to Postgres
 
@@ -143,14 +156,24 @@ write goes through the backend's HTTP API.
 ```
 - the boundary LAM-39 added — worth stating, because nothing in the code says it
 
-### <span style="color:#C95B7A">2.5 — Add the `Bundle Handoff` Section</span>
-```markdown
-## How the bundle reaches the server
+### <span style="color:#D98C3B">2.5 · EDIT — Delete the Three Template Sections</span>
+`README.md:19-50`
+`## Template notes` to end of file, inherited from the Vite scaffold
 
-The backend serves this app and the API from one origin, and pulls `dist/` in
-itself — `scripts/build-frontend.sh` locally, a BuildKit named context for the
-container image. Nothing in this repo needs to know about either.
+```diff
+-## Template notes
+-
+-Inherited from the Vite React+TS template, kept for reference.
+-...
+-## React Compiler
+-...
+-## Expanding the Oxlint configuration
+-...
 ```
+
+- **Why:**
+  - **C** — plugin comparisons and Oxlint setup advice describe the template, not
+    this repo; `.oxlintrc.json` is the live config and already exists
 
 ---
 
