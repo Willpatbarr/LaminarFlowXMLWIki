@@ -294,6 +294,13 @@ renders, so a card edit shows up there after the next `node build.js`.
 
 `wiki-bundle.js` is generated. Do not edit it; edit the card and rebuild.
 
+**On mobile**, the boxes used to render in Times New Roman. draw.io writes each
+box's font with no fallback — `Andale Mono` for code lines, `Helvetica` for the
+small-print ones — and neither font exists on iOS or Android, so the text fell back
+to the SVG default, which is serif. `wiki.html` now restates both fonts with a real
+fallback chain ending in `monospace` / `sans-serif`. The diagram XML is untouched, so
+a card opened in draw.io still carries Andale Mono.
+
 ---
 
 ## Getting around
